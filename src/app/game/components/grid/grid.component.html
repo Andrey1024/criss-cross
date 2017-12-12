@@ -1,0 +1,12 @@
+<svg:line class="grid-line"
+          *ngFor="let i of xIterator"
+          [x1]="i"
+          [x2]="i"
+          [y1]="0"
+          [y2]="sizeY"/>
+<svg:line class="grid-line"
+          *ngFor="let j of yIterator"
+          [y1]="j"
+          [y2]="j"
+          [x1]="0"
+          [x2]="sizeX"/>
