@@ -2,7 +2,8 @@ import {Component, Input, OnChanges, OnInit} from '@angular/core';
 
 @Component({
     selector: '[ccGrid]',
-    templateUrl: 'grid.component.html'
+    templateUrl: 'grid.component.html',
+    styleUrls: ['grid.component.scss']
 })
 
 export class GridComponent implements OnInit, OnChanges {

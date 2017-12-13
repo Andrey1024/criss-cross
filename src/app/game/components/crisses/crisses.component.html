@@ -1,6 +1,7 @@
 <svg:circle *ngFor="let criss of crisses"
+            (click)="onClick.next(criss)"
             class="criss"
-            [cx]="criss.x + 0.5"
-            [cy]="criss.y + 0.5"
+            [attr.cx]="criss.x + 0.5"
+            [attr.cy]="criss.y + 0.5"
             r="0.3"
 />

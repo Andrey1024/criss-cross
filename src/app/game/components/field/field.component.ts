@@ -7,8 +7,6 @@ import {Point} from "../../shared/point.model";
 })
 
 export class FieldComponent implements OnInit {
-    @Input() crisses: Point[];
-    @Input() crosses: Point[];
     
     constructor() {
     }

@@ -7,17 +7,19 @@ import {StoreModule} from "@ngrx/store";
 import {reducers} from "./reducers";
 import {EffectsModule} from "@ngrx/effects";
 import {ApplicationComponent} from "./core/containers/application/application.component";
-
+import {CoreModule} from "./core/core.module";
+import {BrowserAnimationsModule} from "@angular/platform-browser/animations";
+import {GameModule} from "./game/game.module";
 
 @NgModule({
-    declarations: [
-        ApplicationComponent
-    ],
     imports: [
         BrowserModule,
+        BrowserAnimationsModule,
         StoreModule.forRoot(reducers),
         EffectsModule.forRoot([]),
-        AppRoutingModule
+        AppRoutingModule,
+        CoreModule,
+        GameModule
     ],
     providers: [],
     bootstrap: [ApplicationComponent]

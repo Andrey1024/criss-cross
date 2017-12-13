@@ -1,9 +1,9 @@
 <cc-layout>
-    <cc-sidenav [opened]="">
+    <cc-sidenav [opened]="showSidenav | async">
         <cc-nav-item *ngFor=""></cc-nav-item>
     </cc-sidenav>
-    <cc-toolbar></cc-toolbar>
-    <div>
+    <cc-toolbar (openSidenav)="openSidenav()"></cc-toolbar>
+    <div class="page-content">
         <router-outlet></router-outlet>
     </div>
 </cc-layout>

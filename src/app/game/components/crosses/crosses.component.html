@@ -1,14 +1,14 @@
-<svg:g *ngFor="let cross of crosses">
+<svg:g *ngFor="let cross of crosses" (click)="onClick.next(cross)">
     <svg:line class="cross"
-              [x1]="cross.x + 0.2"
-              [x2]="cross.x + 0.8"
-              [y1]="cross.y + 0.8"
-              [y2]="cross.y + 0.2"
+              [attr.x1]="cross.x + 0.2"
+              [attr.x2]="cross.x + 0.8"
+              [attr.y1]="cross.y + 0.8"
+              [attr.y2]="cross.y + 0.2"
     />
     <svg:line class="cross"
-              [x1]="cross.x + 0.2"
-              [x2]="cross.x + 0.8"
-              [y2]="cross.y + 0.8"
-              [y1]="cross.y + 0.2"
+              [attr.x1]="cross.x + 0.2"
+              [attr.x2]="cross.x + 0.8"
+              [attr.y2]="cross.y + 0.8"
+              [attr.y1]="cross.y + 0.2"
     />
 </svg:g>

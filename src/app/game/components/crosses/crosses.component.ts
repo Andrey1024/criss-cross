@@ -1,4 +1,4 @@
-import {Component, Input, OnInit} from '@angular/core';
+import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
 import {Point} from "../../shared/point.model";
 
 @Component({
@@ -8,6 +8,7 @@ import {Point} from "../../shared/point.model";
 
 export class CrossesComponent implements OnInit {
     @Input('ccCrosses') crosses: Point[];
+    @Output() onClick = new EventEmitter<Point>();
     
     constructor() {
     }

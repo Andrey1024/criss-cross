@@ -1,7 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg"
-     version="1.1">
+     version="1.1"
+     width="500"
+     height="500"
+     [attr.viewBox]="'0,0,15,15'">
 
     <g ccGrid [sizeX]="15" [sizeY]="15"></g>
-    <g [ccCrisses]="crisses"></g>
-    <g [ccCrosses]="crosses"></g>
+    <ng-content></ng-content>
 </svg>
