@@ -1,4 +1,5 @@
-<mat-drawer [opened]="opened">
-    sdfsdfasdf
-    <ng-content></ng-content>
+<mat-drawer [opened]="opened" [disableClose]="true">
+    <mat-nav-list>
+        <ng-content></ng-content>
+    </mat-nav-list>
 </mat-drawer>

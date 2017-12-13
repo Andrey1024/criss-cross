@@ -12,7 +12,5 @@ export const reducers = {
 
 const getLayoutState = createFeatureSelector<fromLayout.State>('layout');
 
-export const getShowSidenav = createSelector(
-    getLayoutState,
-    fromLayout.getShowSidenav
-);
+export const getShowSidenav = createSelector(getLayoutState, fromLayout.getShowSidenav);
+export const getToolbarTitle = createSelector(getLayoutState, fromLayout.getToolbarTitle);

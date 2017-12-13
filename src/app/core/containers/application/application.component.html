@@ -1,8 +1,15 @@
 <cc-layout>
     <cc-sidenav [opened]="showSidenav | async">
-        <cc-nav-item *ngFor=""></cc-nav-item>
+        <cc-nav-item [routerLink]="['/game']"
+                     icon="mood"
+                     (navigate)="closeSidenav()">Game
+        </cc-nav-item>
+        <cc-nav-item [routerLink]="['/history']"
+                     icon="history"
+                     (navigate)="closeSidenav()">History
+        </cc-nav-item>
     </cc-sidenav>
-    <cc-toolbar (openSidenav)="openSidenav()"></cc-toolbar>
+    <cc-toolbar (openSidenav)="openSidenav()" [title]="toolbarTitle | async"></cc-toolbar>
     <div class="page-content">
         <router-outlet></router-outlet>
     </div>

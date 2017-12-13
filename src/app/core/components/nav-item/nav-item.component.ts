@@ -1,14 +1,14 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, EventEmitter, Input, Output} from '@angular/core';
 
 @Component({
     selector: 'cc-nav-item',
     templateUrl: 'nav-item.component.html'
 })
 
-export class NavItemComponent implements OnInit {
-    constructor() {
-    }
+export class NavItemComponent {
+    @Input() icon = '';
+    @Input() hint = '';
+    @Input() routerLink: string | any[] = '/';
+    @Output() navigate = new EventEmitter();
     
-    ngOnInit() {
-    }
 }
