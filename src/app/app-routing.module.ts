@@ -2,7 +2,7 @@ import {NgModule} from '@angular/core';
 import {Routes, RouterModule} from '@angular/router';
 
 const routes: Routes = [
-    {path: 'game', loadChildren: 'app/game/game/game.module#GameModule'}
+    {path: 'game', loadChildren: 'app/game/criss-cross/criss-cross.module#CrissCrossModule'}
 ];
 
 @NgModule({
@@ -11,3 +11,4 @@ const routes: Routes = [
 })
 export class AppRoutingModule {
 }
+

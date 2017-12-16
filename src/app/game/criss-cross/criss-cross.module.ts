@@ -1,6 +1,6 @@
 import {NgModule} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {GameRoutingModule} from './game-routing.module';
+import {CrissCrossRoutingModule} from './criss-cross-routing.module';
 import {GamePageComponent} from './containers/game/game-page.component';
 import {ComponentsModule} from './components/components.module';
 import {StoreModule} from '@ngrx/store';
@@ -10,7 +10,7 @@ import {reducers} from './reducers';
 @NgModule({
     imports: [
         CommonModule,
-        GameRoutingModule,
+        CrissCrossRoutingModule,
         ComponentsModule,
         StoreModule.forFeature('game', reducers),
         EffectsModule.forFeature([])
@@ -21,5 +21,5 @@ import {reducers} from './reducers';
     ],
     providers: [],
 })
-export class GameModule {
+export class CrissCrossModule {
 }

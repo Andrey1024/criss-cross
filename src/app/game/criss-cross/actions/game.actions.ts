@@ -6,9 +6,6 @@ export const NEW_GAME = '[game] New Game';
 
 export class Surrender implements Action {
     readonly type = SURRENDER;
-    
-    constructor(public payload: { player: Player }) {
-    }
 }
 
 export class NewGame implements Action {

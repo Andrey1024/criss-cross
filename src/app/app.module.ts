@@ -21,7 +21,7 @@ import {StoreDevtoolsModule} from "@ngrx/store-devtools";
         }),
         EffectsModule.forRoot([]),
         AppRoutingModule,
-        CoreModule,
+        CoreModule
     ],
     providers: [],
     bootstrap: [ApplicationComponent]
