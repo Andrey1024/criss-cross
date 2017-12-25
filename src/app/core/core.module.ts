@@ -7,17 +7,25 @@ import {ApplicationComponent} from "./containers/application/application.compone
 import {ToolbarComponent} from "./components/toolbar/toolbar.component";
 import {RouterModule} from "@angular/router";
 import {CommonModule} from "@angular/common";
+import {PageComponent} from "./containers/page/page.component";
+import {FlexLayoutModule} from "@angular/flex-layout";
 
 const COMPONENTS = [
     LayoutComponent,
     NavItemComponent,
     SidenavComponent,
     ApplicationComponent,
-    ToolbarComponent
+    ToolbarComponent,
+    PageComponent
 ];
 
 @NgModule({
-    imports: [MaterialModule, RouterModule, CommonModule],
+    imports: [
+        MaterialModule,
+        RouterModule,
+        CommonModule,
+        FlexLayoutModule
+    ],
     exports: [COMPONENTS],
     declarations: [COMPONENTS],
     providers: [],

@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Input, OnChanges, OnInit, Output} from '@angular/core';
+import {Component, EventEmitter, OnChanges, OnInit, Output} from '@angular/core';
 
 @Component({
     selector: 'cc-toolbar',
@@ -7,14 +7,12 @@ import {Component, EventEmitter, Input, OnChanges, OnInit, Output} from '@angula
 })
 
 export class ToolbarComponent implements OnInit, OnChanges {
-    @Input() title: string;
     @Output() openSidenav = new EventEmitter();
     
     constructor() {
     }
     
     ngOnChanges() {
-        console.log(this.title);
     }
     
     ngOnInit() {

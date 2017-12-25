@@ -1,5 +1,4 @@
 import {Action} from '@ngrx/store';
-import {Player} from '../models/player.model';
 
 export const SURRENDER = '[game] Surrender';
 export const NEW_GAME = '[game] New Game';

@@ -7,5 +7,5 @@ import {NgModule} from '@angular/core';
     declarations: [],
     providers: [],
 })
-export class ChatModule {
+export class AdminModule {
 }

@@ -1,6 +1,6 @@
-<mat-toolbar color="primary" class="mat-elevation-z6">
+<mat-toolbar color="primary" class="mat-elevation-z6" fxFlex="none">
     <button mat-icon-button (click)="openSidenav.emit()">
         <mat-icon>menu</mat-icon>
     </button>
-    <span>{{title}}</span>
+    <ng-content></ng-content>
 </mat-toolbar>

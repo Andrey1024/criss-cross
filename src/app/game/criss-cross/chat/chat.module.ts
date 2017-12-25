@@ -1,18 +1,16 @@
 import {NgModule} from '@angular/core';
 import {CommonModule} from "@angular/common";
-import {MaterialModule} from "../../material/material.module";
-import {FlexLayoutModule} from "@angular/flex-layout";
+import {MaterialModule} from "../../../material/material.module";
 
 
 @NgModule({
     imports: [
         CommonModule,
-        MaterialModule,
-        FlexLayoutModule
+        MaterialModule
     ],
     exports: [],
     declarations: [],
     providers: [],
 })
-export class PlayerListModule {
+export class ChatModule {
 }

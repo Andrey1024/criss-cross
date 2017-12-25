@@ -9,8 +9,10 @@
                      (navigate)="closeSidenav()">History
         </cc-nav-item>
     </cc-sidenav>
-    <cc-toolbar (openSidenav)="openSidenav()" [title]="toolbarTitle | async"></cc-toolbar>
-    <div class="page-content">
+    <cc-toolbar (openSidenav)="openSidenav()">
+        {{ toolbarTitle | async }}
+    </cc-toolbar>
+    <div class="page-content" fxFlex="1" fxLayout="row" fxLayoutAlign="center">
         <router-outlet></router-outlet>
     </div>
 </cc-layout>

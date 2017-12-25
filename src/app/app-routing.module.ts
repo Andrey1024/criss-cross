@@ -1,8 +1,9 @@
 import {NgModule} from '@angular/core';
-import {Routes, RouterModule} from '@angular/router';
+import {RouterModule, Routes} from '@angular/router';
 
 const routes: Routes = [
-    {path: 'game', loadChildren: 'app/game/criss-cross/criss-cross.module#CrissCrossModule'}
+    {path: 'game', loadChildren: 'app/game/game.module#GameModule'},
+    {path: 'admin', loadChildren: 'app/admin/admin.module#AdminModule'}
 ];
 
 @NgModule({

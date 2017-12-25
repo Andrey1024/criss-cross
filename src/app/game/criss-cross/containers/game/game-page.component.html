@@ -1,6 +1,9 @@
-<div class="mat-elevation-z6">
-    <cc-field (onClick)="click($event)">
-        <svg:g [ccCrisses]="crisses | async"></svg:g>
-        <svg:g [ccCrosses]="crosses | async"></svg:g>
-    </cc-field>
-</div>
+<cc-page [title]="'Game'">
+    <div class="mat-elevation-z6">
+        <cc-field (onClick)="click($event)">
+            <svg:g [ccCrisses]="crisses | async"></svg:g>
+            <svg:g [ccCrosses]="crosses | async"></svg:g>
+        </cc-field>
+    </div>
+
+</cc-page>
