@@ -1,9 +1,9 @@
-import * as fromRoot from '../../reducers/index';
-import * as fromGame from '../criss-cross/reducers/game.reducer';
-import {createFeatureSelector, createSelector} from "@ngrx/store";
+import * as fromRoot                             from '../../reducers/index';
+import * as fromGame                             from '../criss-cross/state/game.state';
+import { createFeatureSelector, createSelector } from "@ngrx/store";
 
 export interface GameState {
-    game: fromGame.State;
+    game: fromGame.GameModel;
 }
 
 export interface State extends fromRoot.State {

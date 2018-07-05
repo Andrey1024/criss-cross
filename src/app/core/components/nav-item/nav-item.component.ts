@@ -1,8 +1,7 @@
-import {Component, EventEmitter, Input, Output} from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 
 @Component({
-    selector: 'cc-nav-item',
-    templateUrl: 'nav-item.component.html'
+    selector: 'cc-nav-item', templateUrl: 'nav-item.component.html'
 })
 
 export class NavItemComponent {
@@ -10,5 +9,5 @@ export class NavItemComponent {
     @Input() hint = '';
     @Input() routerLink: string | any[] = '/';
     @Output() navigate = new EventEmitter();
-    
+
 }

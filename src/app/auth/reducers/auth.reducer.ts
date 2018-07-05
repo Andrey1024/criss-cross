@@ -1,35 +1,22 @@
 import * as auth from '../actions/auth.actions';
-import {User} from '../models/user.models';
+import { User }  from '../models/user.models';
+import { State } from "@ngxs/store";
 
-export interface State {
+export interface AuthModel {
     loggedIn: boolean;
     user: User | null;
 }
 
-export const initialState: State = {
-    loggedIn: false,
-    user: null,
+export const initialState: AuthModel = {
+    loggedIn: false, user: null,
 };
 
-export function reducer(state = initialState, action: auth.Actions): State {
-    switch (action.type) {
-        case auth.LOGIN_SUCCESS: {
-            return {
-                ...state,
-                loggedIn: true,
-                user: action.payload.user,
-            };
-        }
-        
-        case auth.LOGOUT: {
-            return initialState;
-        }
-        
-        default: {
-            return state;
-        }
-    }
+@State<AuthModel>({
+    name: "auth"
+})
+export class AuthState {
+
 }
 
-export const getLoggedIn = (state: State) => state.loggedIn;
-export const getUser = (state: State) => state.user;
+export const getLoggedIn = (state: AuthModel) => state.loggedIn;
+export const getUser = (state: AuthModel) => state.user;

@@ -6,18 +6,17 @@ export interface State {
 }
 
 export const initialState: State = {
-    showSidenav: false,
-    toolbarTitle: ""
+    showSidenav: false, toolbarTitle: ""
 };
 
 export function reducer(state: State = initialState, action: layoutActions.Actions): State {
     switch (action.type) {
         case layoutActions.OPEN_SIDENAV:
-            return {...state, showSidenav: true};
+            return { ...state, showSidenav: true };
         case layoutActions.CLOSE_SIDENAV:
-            return {...state, showSidenav: false};
+            return { ...state, showSidenav: false };
         case layoutActions.SET_TOOLBAR_TITLE:
-            return {...state, toolbarTitle: action.payload.title};
+            return { ...state, toolbarTitle: action.payload.title };
         default:
             return state;
     }

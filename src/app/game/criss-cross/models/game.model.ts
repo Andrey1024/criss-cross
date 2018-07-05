@@ -1,5 +1,5 @@
-import {Move} from "./move.model";
-import {User} from "../../../auth/models/user.models";
+import { Move } from "./move.model";
+import { User } from "../../../auth/models/user.models";
 
 export interface Game {
     id: number;

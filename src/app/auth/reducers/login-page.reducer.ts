@@ -6,36 +6,29 @@ export interface State {
 }
 
 export const initialState: State = {
-    error: null,
-    pending: false,
+    error: null, pending: false,
 };
 
 export function reducer(state = initialState, action: auth.Actions): State {
     switch (action.type) {
         case auth.LOGIN: {
             return {
-                ...state,
-                error: null,
-                pending: true,
+                ...state, error: null, pending: true,
             };
         }
-        
+
         case auth.LOGIN_SUCCESS: {
             return {
-                ...state,
-                error: null,
-                pending: false,
+                ...state, error: null, pending: false,
             };
         }
-        
+
         case auth.LOGIN_FAILURE: {
             return {
-                ...state,
-                error: action.payload,
-                pending: false,
+                ...state, error: action.payload, pending: false,
             };
         }
-        
+
         default: {
             return state;
         }

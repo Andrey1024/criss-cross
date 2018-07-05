@@ -1,5 +1,5 @@
-import {Component} from '@angular/core';
-import {Store} from '@ngrx/store';
+import { Component } from '@angular/core';
+import { Store }     from '@ngrx/store';
 import * as fromAuth from '../../reducers';
 
 @Component({
@@ -8,5 +8,5 @@ import * as fromAuth from '../../reducers';
 export class LoginPageComponent {
     constructor(private store: Store<fromAuth.State>) {
     }
-    
+
 }

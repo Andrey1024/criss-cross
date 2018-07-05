@@ -1,19 +1,7 @@
-import {Action} from '@ngrx/store';
-
-export const SURRENDER = '[game] Surrender';
-export const NEW_GAME = '[game] New Game';
-
-export class Surrender implements Action {
-    readonly type = SURRENDER;
+export class Surrender {
+    static readonly type = '[game] Surrender';
 }
 
-export class NewGame implements Action {
-    readonly type = NEW_GAME;
-    
-    constructor(public payload: {}) {
-    }
+export class NewGame {
+    static readonly type = '[game] New Game';
 }
-
-export type Actions
-    = Surrender
-    | NewGame;
