@@ -6,11 +6,22 @@ import { FieldComponent }   from "./field/field.component";
 import { GridComponent }    from "./grid/grid.component";
 import { MaterialModule }   from "../../../material/material.module";
 
-const COMPONENTS = [CrissesComponent, CrossesComponent, FieldComponent, GridComponent];
+const COMPONENTS = [
+    CrissesComponent,
+    CrossesComponent,
+    FieldComponent,
+    GridComponent
+];
 
 
 @NgModule({
-    imports: [CommonModule, MaterialModule], exports: [COMPONENTS], declarations: [COMPONENTS], providers: [],
+    imports: [
+        CommonModule,
+        MaterialModule
+    ],
+    exports: [COMPONENTS],
+    declarations: [COMPONENTS],
+    providers: [],
 })
 export class ComponentsModule {
 }

@@ -1,7 +1,10 @@
-import { Component, Input, OnChanges, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnChanges, OnInit } from '@angular/core';
 
 @Component({
-    selector: '[ccGrid]', templateUrl: 'grid.component.html', styleUrls: ['grid.component.scss']
+    selector: '[ccGrid]',
+    templateUrl: 'grid.component.html',
+    styleUrls: ['grid.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class GridComponent implements OnInit, OnChanges {

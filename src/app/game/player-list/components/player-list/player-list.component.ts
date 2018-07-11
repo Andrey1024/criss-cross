@@ -3,7 +3,8 @@ import { User }                                                                 
 import { MatPaginator, MatSort, MatTableDataSource }                                      from "@angular/material";
 
 @Component({
-    selector: 'cc-player-list', templateUrl: 'player-list.component.html'
+    selector: 'cc-player-list',
+    templateUrl: 'player-list.component.html'
 })
 
 export class PlayerListComponent implements OnInit, OnChanges, AfterViewInit {

@@ -4,7 +4,13 @@ import { MaterialModule } from "../../../material/material.module";
 
 
 @NgModule({
-    imports: [CommonModule, MaterialModule], exports: [], declarations: [], providers: [],
+    imports: [
+        CommonModule,
+        MaterialModule
+    ],
+    exports: [],
+    declarations: [],
+    providers: [],
 })
 export class ChatModule {
 }

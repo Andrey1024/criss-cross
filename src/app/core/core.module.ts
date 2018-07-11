@@ -9,11 +9,26 @@ import { RouterModule }         from "@angular/router";
 import { CommonModule }         from "@angular/common";
 import { PageComponent }        from "./containers/page/page.component";
 import { FlexLayoutModule }     from "@angular/flex-layout";
+import { NgxsModule }           from "@ngxs/store";
+import { LayoutState }          from "./state/layout.state";
 
-const COMPONENTS = [LayoutComponent, NavItemComponent, SidenavComponent, ApplicationComponent, ToolbarComponent, PageComponent];
+const COMPONENTS = [
+    LayoutComponent,
+    NavItemComponent,
+    SidenavComponent,
+    ApplicationComponent,
+    ToolbarComponent,
+    PageComponent
+];
 
 @NgModule({
-    imports: [MaterialModule, RouterModule, CommonModule, FlexLayoutModule],
+    imports: [
+        MaterialModule,
+        RouterModule,
+        CommonModule,
+        FlexLayoutModule,
+        NgxsModule.forFeature([LayoutState])
+    ],
     exports: [COMPONENTS],
     declarations: [COMPONENTS],
     providers: [],

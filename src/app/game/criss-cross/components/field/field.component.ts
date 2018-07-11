@@ -1,10 +1,13 @@
-import { Component, ElementRef, EventEmitter, OnInit, Output, ViewChild } from '@angular/core';
-import { Point }                                                          from '../../models/point.model';
+import { ChangeDetectionStrategy, Component, ElementRef, EventEmitter, OnInit, Output, ViewChild } from '@angular/core';
+import { Point }                                                                                   from '../../models/point.model';
 
 @Component({
-    selector: 'cc-field', templateUrl: 'field.component.html', host: {
+    selector: 'cc-field',
+    templateUrl: 'field.component.html',
+    host: {
         style: "flex;"
-    }
+    },
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class FieldComponent implements OnInit {

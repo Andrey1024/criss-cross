@@ -1,9 +1,9 @@
 import { Component, EventEmitter, Input, Output } from "@angular/core";
-import { Authenticate }                           from "../../models/authenticate.model";
 import { FormControl, FormGroup }                 from "@angular/forms";
 
 @Component({
-    selector: "cc-login-form"
+    selector: "cc-login-form",
+    templateUrl: "login-form.component.html"
 })
 export class LoginFormComponent {
     loginGroup = new FormGroup({
@@ -13,5 +13,5 @@ export class LoginFormComponent {
     @Input() pending;
     @Input() error: string;
 
-    @Output() submit = new EventEmitter<Authenticate>();
+    @Output() submit = new EventEmitter();
 }

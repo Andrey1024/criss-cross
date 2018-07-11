@@ -1,3 +1,9 @@
-<mat-card>
-
-</mat-card>
+<form [formGroup]="loginGroup" ngxsForm="loginForm" (submit)="submit.emit()">
+    <mat-form-field>
+        <input matInput placeholder="Логин" formControlName="login"/>
+    </mat-form-field>
+    <mat-form-field>
+        <input matInput placeholder="Пароль" type="password" formControlName="password"/>
+    </mat-form-field>
+    <button mat-raised-button color="primary" type="submit">Отправить</button>
+</form>

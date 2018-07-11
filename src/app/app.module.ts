@@ -1,18 +1,15 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule }      from '@angular/core';
 
-import { AppRoutingModule } from './app-routing.module';
-
-import { StoreModule }               from '@ngrx/store';
-import { reducers }                  from './reducers';
-import { EffectsModule }             from '@ngrx/effects';
+import { AppRoutingModule }          from './app-routing.module';
 import { ApplicationComponent }      from './core/containers/application/application.component';
 import { CoreModule }                from './core/core.module';
 import { BrowserAnimationsModule }   from '@angular/platform-browser/animations';
-import { StoreDevtoolsModule }       from "@ngrx/store-devtools";
 import { StompConfig, StompService } from "@stomp/ng2-stompjs";
 import * as SockJS                   from 'sockjs-client';
 import { WebSocketService }          from "./services/web-socket.service";
+import { NgxsModule }                from "@ngxs/store";
+import { AuthModule }                from "./auth/auth.module";
 
 export function socketProvider() {
     return new SockJS('/criss-cross');
@@ -43,11 +40,22 @@ const stompConfig: StompConfig = {
 };
 
 @NgModule({
-    imports: [BrowserModule, BrowserAnimationsModule, StoreModule.forRoot(reducers), StoreDevtoolsModule.instrument({
-        maxAge: 25
-    }), EffectsModule.forRoot([]), AppRoutingModule, CoreModule], providers: [StompService, {
-        provide: StompConfig, useValue: stompConfig
-    }, WebSocketService], bootstrap: [ApplicationComponent]
+    imports: [
+        BrowserModule,
+        BrowserAnimationsModule,
+        AppRoutingModule,
+        CoreModule,
+        AuthModule,
+        NgxsModule.forRoot()
+    ],
+    providers: [
+        // StompService,
+        // {
+        //     provide: StompConfig, useValue: stompConfig
+        // },
+        // WebSocketService
+    ],
+    bootstrap: [ApplicationComponent]
 })
 export class AppModule {
 }

@@ -1,20 +1,14 @@
-export const OPEN_SIDENAV = '[layout] Open Sidenav';
-export const CLOSE_SIDENAV = '[layout] Close Sidenav';
-export const SET_TOOLBAR_TITLE = '[layout] Set Toolbar Title';
-
 export class OpenSidenav {
-    static readonly type = OPEN_SIDENAV;
+    static readonly type = '[layout] Open Sidenav';
 }
 
 export class CloseSidenav {
-    static readonly type = CLOSE_SIDENAV;
+    static readonly type = '[layout] Close Sidenav';
 }
 
 export class SetToolbarTitle {
-    static readonly type = SET_TOOLBAR_TITLE;
+    static readonly type = '[layout] Set Toolbar Title';
 
-    constructor(public payload: { title: string }) {
+    constructor(public title: string) {
     }
 }
-
-export type Actions = OpenSidenav | CloseSidenav | SetToolbarTitle;

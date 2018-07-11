@@ -4,7 +4,14 @@ import { CrissCrossModule } from "./criss-cross/criss-cross.module";
 import { PlayerListModule } from "./player-list/player-list.module";
 
 @NgModule({
-    imports: [CommonModule, CrissCrossModule, PlayerListModule], exports: [], declarations: [], providers: [],
+    imports: [
+        CommonModule,
+        CrissCrossModule,
+        PlayerListModule
+    ],
+    exports: [],
+    declarations: [],
+    providers: [],
 })
 export class GameModule {
 }
