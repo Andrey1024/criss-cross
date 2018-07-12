@@ -1,14 +1,24 @@
-import * as auth                   from '../actions/auth.actions';
+import * as auth from '../actions/auth.actions';
 import { Action, Selector, State } from "@ngxs/store";
 
 export interface LoginFormModel {
-    login: string;
-    password: string;
+    model: {
+        login: string;
+        password: string;
+    };
+    dirty: boolean;
+    status: string;
+    errors: any;
 }
 
 const initialState: LoginFormModel = {
-    login: "",
-    password: ""
+    model: {
+        login: "",
+        password: ""
+    },
+    dirty: false,
+    status: "",
+    errors: {}
 };
 
 @State<LoginFormModel>({
@@ -16,7 +26,8 @@ const initialState: LoginFormModel = {
     defaults: initialState
 })
 export class LoginFormState {
-    @Selector() static getAuthorities(state: LoginFormModel) {
-        return state;
+    @Selector()
+    static getAuthorities(state: LoginFormModel) {
+        return state.model;
     }
 }

@@ -6,6 +6,11 @@ import { LoginPageComponent }  from "./containers/login-page/login-page.componen
 import { ReactiveFormsModule } from "@angular/forms";
 import { CoreModule }          from "../core/core.module";
 import { AuthRoutingModule }   from "./auth-routing.module";
+import { NgxsFormPluginModule } from "@ngxs/form-plugin";
+import { NgxsModule } from "@ngxs/store";
+import { AuthState } from "./state/auth.state";
+import { HttpClientModule } from "@angular/common/http";
+import { LoginFormState } from "./state/login-form.state";
 
 @NgModule({
     imports: [
@@ -13,7 +18,10 @@ import { AuthRoutingModule }   from "./auth-routing.module";
         MaterialModule,
         ReactiveFormsModule,
         CoreModule,
-        AuthRoutingModule
+        AuthRoutingModule,
+        NgxsFormPluginModule,
+        HttpClientModule,
+        NgxsModule.forFeature([AuthState, LoginFormState])
     ],
     exports: [],
     declarations: [

@@ -1,9 +1,8 @@
-import * as auth                                        from '../actions/auth.actions';
+import * as auth from '../actions/auth.actions';
 import { Action, Selector, State, StateContext, Store } from "@ngxs/store";
-import { UsersModel, UsersState }                       from "./users.state";
-import { HttpClient }                                   from "@angular/common/http";
-import { User }                                         from "../models/user.models";
-import { LoginFormModel, LoginFormState }               from "./login-form.state";
+import { HttpClient } from "@angular/common/http";
+import { User } from "../models/user.models";
+import { LoginFormState } from "./login-form.state";
 
 export interface AuthModel {
     loggedIn: boolean;
@@ -36,7 +35,7 @@ export class AuthState {
 
     @Action(auth.Login)
     login(ctx: StateContext<AuthModel>) {
-        const authorities = this.store.selectSnapshot<LoginFormModel>(LoginFormState.getAuthorities);
+        const authorities = this.store.selectSnapshot<{ login: string; password: string }>(LoginFormState.getAuthorities);
         this.http.post<User>("api/login", { username: authorities.login, password: authorities.password })
             .subscribe(user => {
                 const state = ctx.getState();
