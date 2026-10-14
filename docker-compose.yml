@@ -1,0 +1,33 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: crisscross
+      POSTGRES_PASSWORD: crisscross
+      POSTGRES_DB: crisscross
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crisscross"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  # Full production-like stack: `docker compose --profile full up --build`
+  app:
+    profiles: ["full"]
+    build: .
+    env_file: apps/server/.env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://crisscross:crisscross@db:5432/crisscross
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

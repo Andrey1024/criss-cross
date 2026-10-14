@@ -1,0 +1,23 @@
+{
+  "name": "criss-cross",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run build -w @cc/shared && concurrently -k -n shared,server,web -c gray,blue,magenta \"npm run dev -w @cc/shared\" \"npm run dev -w @cc/server\" \"npm run dev -w @cc/web\"",
+    "build": "npm run build -w @cc/shared && npm run build -w @cc/server && npm run build -w @cc/web",
+    "start": "npm run start -w @cc/server",
+    "test": "npm run build -w @cc/shared && npm test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "db:up": "docker compose up -d db",
+    "db:migrate": "npm run db:migrate -w @cc/server",
+    "e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "concurrently": "^9.2.1",
+    "typescript": "~5.9.2"
+  }
+}

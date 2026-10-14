@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum RoomStatus {
+  WAITING
+  PLAYING
+  FINISHED
+  CLOSED
+}
+
+enum GameResult {
+  WIN
+  DRAW
+  RESIGNED
+  ABANDONED
+}
+
+model User {
+  id         String        @id @default(cuid())
+  /// Null for accounts created through dev login.
+  googleId   String?       @unique
+  email      String        @unique
+  name       String
+  avatarUrl  String?
+  role       Role          @default(USER)
+  createdAt  DateTime      @default(now())
+  bans       Ban[]         @relation("BannedUser")
+  bansIssued Ban[]         @relation("BanIssuer")
+  rooms      Room[]
+  gamesAsX   Game[]        @relation("XPlayer")
+  gamesAsO   Game[]        @relation("OPlayer")
+  gamesWon   Game[]        @relation("Winner")
+  moves      Move[]
+  messages   ChatMessage[]
+}
+
+model Ban {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation("BannedUser", fields: [userId], references: [id], onDelete: Cascade)
+  adminId   String
+  admin     User      @relation("BanIssuer", fields: [adminId], references: [id])
+  reason    String
+  createdAt DateTime  @default(now())
+  /// Null means permanent.
+  expiresAt DateTime?
+  revokedAt DateTime?
+
+  @@index([userId])
+}
+
+model Room {
+  id        String        @id @default(cuid())
+  name      String
+  hostId    String
+  host      User          @relation(fields: [hostId], references: [id])
+  status    RoomStatus    @default(WAITING)
+  boardSize Int           @default(15)
+  createdAt DateTime      @default(now())
+  games     Game[]
+  messages  ChatMessage[]
+
+  @@index([status])
+}
+
+model Game {
+  id        String      @id
+  roomId    String
+  room      Room        @relation(fields: [roomId], references: [id])
+  xPlayerId String
+  xPlayer   User        @relation("XPlayer", fields: [xPlayerId], references: [id])
+  oPlayerId String
+  oPlayer   User        @relation("OPlayer", fields: [oPlayerId], references: [id])
+  winnerId  String?
+  winner    User?       @relation("Winner", fields: [winnerId], references: [id])
+  /// Null while the game is in progress.
+  result    GameResult?
+  startedAt DateTime    @default(now())
+  endedAt   DateTime?
+  moves     Move[]
+
+  @@index([xPlayerId])
+  @@index([oPlayerId])
+}
+
+model Move {
+  id         String   @id @default(cuid())
+  gameId     String
+  game       Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  playerId   String
+  player     User     @relation(fields: [playerId], references: [id])
+  x          Int
+  y          Int
+  moveNumber Int
+  createdAt  DateTime @default(now())
+
+  @@unique([gameId, moveNumber])
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  roomId    String
+  room      Room     @relation(fields: [roomId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  text      String
+  createdAt DateTime @default(now())
+
+  @@index([roomId, createdAt])
+  @@index([createdAt])
+}
