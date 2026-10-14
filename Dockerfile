@@ -17,5 +17,5 @@ WORKDIR /app
 ENV NODE_ENV=production PORT=3000
 COPY --from=build /app /app
 EXPOSE 3000
-# Apply pending migrations, then start.
-CMD ["sh", "-c", "npx prisma migrate deploy --schema apps/server/prisma/schema.prisma && node apps/server/dist/main.js"]
+# `npm start` applies pending migrations, then starts the server.
+CMD ["npm", "start"]
