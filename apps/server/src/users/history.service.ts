@@ -39,6 +39,7 @@ export class HistoryService {
           outcome,
           result: g.result!,
           moveCount: g._count.moves,
+          ratingDiff: g.rated ? (myMark === 'X' ? g.xRatingDiff : g.oRatingDiff) : null,
           startedAt: g.startedAt.toISOString(),
           endedAt: (g.endedAt ?? g.startedAt).toISOString(),
         };

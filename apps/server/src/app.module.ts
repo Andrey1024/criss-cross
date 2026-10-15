@@ -11,14 +11,17 @@ import { GameGateway } from './game/game.gateway';
 import { GameService } from './game/game.service';
 import { RoomsController } from './game/rooms.controller';
 import { PrismaService } from './prisma.service';
+import { LeaderboardController } from './rating/leaderboard.controller';
+import { RatingService } from './rating/rating.service';
 import { HistoryService } from './users/history.service';
 import { MeController } from './users/me.controller';
 
 @Module({
   imports: [JwtModule.register({})],
-  controllers: [AuthController, RoomsController, MeController, AdminController],
+  controllers: [AuthController, RoomsController, MeController, AdminController, LeaderboardController],
   providers: [
     PrismaService,
+    RatingService,
     AuthService,
     GameService,
     ChatService,

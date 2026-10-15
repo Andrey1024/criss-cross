@@ -2,6 +2,7 @@ export * from './game';
 export * from './types';
 export * from './schemas';
 export * from './ai';
+export * from './rating';
 
 /** Socket.IO event names shared by client and server. */
 export const Events = {
@@ -24,3 +25,8 @@ export const Events = {
 /** Seconds an absent player has to come back before forfeiting. */
 export const AWAY_GRACE_SECONDS = 30;
 export const AUTH_COOKIE = 'cc_token';
+/**
+ * Readable (non-httpOnly) hint that a session probably exists, so the browser can skip showing
+ * the pre-rendered public landing page to signed-in users. Never trusted by the server.
+ */
+export const SESSION_HINT_COOKIE = 'cc_session';

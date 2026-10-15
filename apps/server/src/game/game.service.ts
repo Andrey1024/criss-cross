@@ -22,6 +22,7 @@ import {
   type RoomState,
 } from '@cc/shared';
 import { PrismaService } from '../prisma.service';
+import { RatingService, type RatingChange } from '../rating/rating.service';
 
 export const LOBBY_CHANNEL = 'lobby';
 export const roomChannel = (roomId: string) => `room:${roomId}`;
@@ -53,6 +54,9 @@ interface LiveRoom {
   winLine: Point[] | null;
   result: GameResult | null;
   endReason: EndReason | null;
+  /** Whether the finished game was rated (null until known) and the rating changes. */
+  rated: boolean | null;
+  ratingChange: RatingChange | null;
   /** userId -> ids of that user's sockets currently in the room. */
   presence: Map<string, Set<string>>;
   /** Grace timers for absent players (or an absent host of a waiting room). */
@@ -74,7 +78,10 @@ export class GameService implements OnModuleInit {
   private server: Server | null = null;
   awayGraceMs = AWAY_GRACE_SECONDS * 1000;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ratings: RatingService,
+  ) {}
 
   async onModuleInit() {
     // Live state was lost with the previous process, so unfinished games can't continue.
@@ -146,6 +153,8 @@ export class GameService implements OnModuleInit {
       winLine: null,
       result: null,
       endReason: null,
+      rated: null,
+      ratingChange: null,
       presence: new Map(),
       away: new Map(),
       cleanupTimer: null,
@@ -313,6 +322,13 @@ export class GameService implements OnModuleInit {
       this.prisma.game.update({ where: { id: gameId }, data: { winnerId, result, endedAt: new Date() } }),
     );
     this.persist(room, () => this.prisma.room.update({ where: { id: room.id }, data: { status: 'FINISHED' } }));
+    // Rate after the result is stored; tell the room once the new ratings are known.
+    this.persist(room, async () => {
+      const change = await this.ratings.rateGame(gameId);
+      room.rated = change !== null;
+      room.ratingChange = change;
+      if (this.rooms.get(room.id) === room) this.broadcastRoom(room);
+    });
 
     this.broadcastRoom(room);
     this.broadcastLobby();
@@ -374,6 +390,11 @@ export class GameService implements OnModuleInit {
     this.server?.to(LOBBY_CHANNEL).emit(Events.LobbyRooms, this.lobbyRooms());
   }
 
+  private ratingsOf(room: LiveRoom) {
+    const { X, O } = room.players;
+    return { X: this.ratings.view(X.id), O: O ? this.ratings.view(O.id) : null };
+  }
+
   private toLobbyRoom(room: LiveRoom): LobbyRoom {
     return {
       id: room.id,
@@ -381,6 +402,7 @@ export class GameService implements OnModuleInit {
       status: room.status === 'WAITING' ? 'WAITING' : 'PLAYING',
       host: room.host,
       players: room.players,
+      ratings: this.ratingsOf(room),
       createdAt: room.createdAt.toISOString(),
     };
   }
@@ -397,6 +419,9 @@ export class GameService implements OnModuleInit {
       boardSize: room.boardSize,
       host: room.host,
       players: room.players,
+      ratings: this.ratingsOf(room),
+      rated: room.rated,
+      ratingChange: room.ratingChange,
       connected: { X: room.presence.has(X.id), O: O ? room.presence.has(O.id) : false },
       awayDeadline: {
         X: room.away.get(X.id)?.deadline ?? null,

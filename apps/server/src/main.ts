@@ -2,26 +2,38 @@ import './env';
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { AppModule } from './app.module';
 import { config } from './config';
 
+/** Public pages pre-rendered by the web build (see apps/web/scripts/prerender.mjs). */
+const PRERENDERED: Record<string, string> = {
+  '/rules': 'rules.html',
+  '/play/computer': 'play-computer.html',
+};
+
 async function bootstrap() {
   config.jwtSecret; // fail fast if missing
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.setGlobalPrefix('api');
+  app.use(compression());
   app.use(cookieParser());
   app.enableShutdownHooks();
 
   // In production the server also serves the built React app (single deployable).
   const webDist = process.env.WEB_DIST ?? join(__dirname, '..', '..', 'web', 'dist');
   if (config.isProduction && existsSync(webDist)) {
+    // "/" is served by the static index.html (the pre-rendered landing page).
     app.useStaticAssets(webDist);
+    const appShell = existsSync(join(webDist, 'app.html')) ? 'app.html' : 'index.html';
     app.use((req: any, res: any, next: () => void) => {
       if (req.method !== 'GET' || req.path.startsWith('/api') || req.path.startsWith('/socket.io')) return next();
-      res.sendFile(join(webDist, 'index.html'));
+      // Pre-rendered public pages first, then the client-side app shell.
+      const page = PRERENDERED[req.path.replace(/\/+$/, '')];
+      res.sendFile(join(webDist, page && existsSync(join(webDist, page)) ? page : appShell));
     });
   }
 

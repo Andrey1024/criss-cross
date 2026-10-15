@@ -7,6 +7,7 @@ import { config } from '../config';
 import { PrismaService } from '../prisma.service';
 import { activeBanWhere, toBanInfo } from '../common/mappers';
 import { BannedException } from './banned.exception';
+import { RatingService } from '../rating/rating.service';
 
 export const TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
 
@@ -17,6 +18,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
+    private readonly ratings: RatingService,
   ) {}
 
   async loginWithGoogle(credential: string): Promise<User> {
@@ -58,6 +60,7 @@ export class AuthService {
       user = await this.prisma.user.update({ where: { id: user.id }, data: { role: 'ADMIN' } });
     }
     await this.assertNotBanned(user.id);
+    this.ratings.remember(user);
     return user;
   }
 
@@ -85,6 +88,7 @@ export class AuthService {
     if (!user) return null;
     const { bans, ...rest } = user;
     if (bans[0]) throw new BannedException(toBanInfo(bans[0]));
+    this.ratings.remember(rest);
     return rest;
   }
 

@@ -27,7 +27,8 @@ function setup() {
     to: (to: string) => ({ emit: (event: string, payload: any) => emitted.push({ to, event, payload }) }),
     in: () => ({ socketsLeave: () => {} }),
   };
-  const game = new GameService(prisma);
+  const ratings = { view: () => ({ rating: 1500, provisional: true }), rateGame: async () => null };
+  const game = new GameService(prisma, ratings as any);
   game.attachServer(server as any);
   return { game, db, emitted };
 }

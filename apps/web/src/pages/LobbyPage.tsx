@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { Events, ROOM_NAME_MAX_LENGTH, type LobbyRoom } from '@cc/shared';
 import { MarkIcon } from '../components/Board';
+import { RatingBadge } from '../components/RatingBadge';
 import { Avatar, Badge, Button, Card, ErrorNote, inputClass, Spinner } from '../components/ui';
 import { api } from '../lib/api';
 import { useMe } from '../lib/auth';
@@ -108,10 +109,18 @@ function RoomRow({ room, action, onOpen }: { room: LobbyRoom; action: string; on
         <p className="truncate text-sm font-medium">{room.name}</p>
         <p className="truncate text-xs text-slate-500">
           {room.status === 'WAITING' ? (
-            <>Host {room.host.name} · created {formatTime(room.createdAt)}</>
+            <>
+              Host {room.host.name} (<RatingBadge rating={room.ratings.X} />) · created {formatTime(room.createdAt)}
+            </>
           ) : (
             <>
-              {room.players.X.name} vs {room.players.O?.name}
+              {room.players.X.name} (<RatingBadge rating={room.ratings.X} />) vs {room.players.O?.name}
+              {room.ratings.O && (
+                <>
+                  {' '}
+                  (<RatingBadge rating={room.ratings.O} />)
+                </>
+              )}
             </>
           )}
         </p>

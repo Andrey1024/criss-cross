@@ -2,7 +2,7 @@ import { expect, test, type Browser, type Page } from '@playwright/test';
 
 async function signIn(browser: Browser, email: string, name: string): Promise<Page> {
   const page = await (await browser.newContext()).newPage();
-  await page.goto('/');
+  await page.goto('/login');
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Display name').fill(name);
   await page.getByRole('button', { name: 'Sign in without Google' }).click();
@@ -40,6 +40,13 @@ test('two players play a full game, chat, and see it in their history', async ({
   await cell(alice, 4, 7).click();
   await expect(alice.getByText(/You won/)).toBeVisible();
   await expect(bob.getByText(/You lost/)).toBeVisible();
+  // Rating changes appear once the rated game is processed.
+  await expect(alice.getByText(/^\+\d+$/)).toBeVisible();
+  await expect(bob.getByText(/^−\d+$/)).toBeVisible();
+
+  await bob.getByRole('link', { name: 'Leaderboard' }).click();
+  await expect(bob.getByRole('heading', { name: 'Leaderboard' })).toBeVisible();
+  await expect(bob.getByText(/Play 2 more rated games/)).toBeVisible();
 
   await alice.getByRole('link', { name: 'My games' }).click();
   await expect(alice.getByRole('cell', { name: 'Bob' })).toBeVisible();

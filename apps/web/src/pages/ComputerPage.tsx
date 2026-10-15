@@ -12,7 +12,9 @@ import {
 } from '@cc/shared';
 import { Board, MarkIcon } from '../components/Board';
 import { Avatar, Badge, Button, Card } from '../components/ui';
-import { useMe } from '../lib/auth';
+import { useAuth } from '../lib/auth';
+import { usePageTitle } from '../lib/usePageTitle';
+import { PAGES } from '../seo';
 import { useAiWorker } from '../lib/useAiWorker';
 
 const LEVEL_INFO: Record<AiLevel, { label: string; hint: string }> = {
@@ -30,6 +32,7 @@ interface Settings {
 }
 
 function loadSettings(): Settings {
+  if (typeof window === 'undefined') return { level: 'medium', mark: 'X' }; // pre-rendering
   try {
     const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? 'null');
     if (AI_LEVELS.includes(saved?.level) && (saved?.mark === 'X' || saved?.mark === 'O')) return saved;
@@ -53,6 +56,8 @@ export function ComputerPage() {
   const [playing, setPlaying] = useState(false);
   const [moves, setMoves] = useState<PlayedMove[]>([]);
   const think = useAiWorker();
+  const { user } = useAuth();
+  usePageTitle(PAGES[2].title);
 
   const myMark = settings.mark;
   const aiMark = otherMark(myMark);
@@ -153,9 +158,18 @@ export function ComputerPage() {
             New game
           </Button>
           <Link to="/" className="ml-auto text-sm text-slate-600 hover:text-slate-900">
-            ← Lobby
+            {user ? '← Lobby' : '← Home'}
           </Link>
         </div>
+        {!user && over && (
+          <div className="mt-4 rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+            <p className="font-medium">Ready for a real opponent?</p>
+            <p className="mt-0.5 text-blue-800">Sign in with Google to play people online, get a rating and climb the leaderboard.</p>
+            <Link to="/login?next=/" className="mt-2 inline-block font-medium text-blue-700 underline-offset-2 hover:underline">
+              Sign in to play people →
+            </Link>
+          </div>
+        )}
       </Card>
     </div>
   );
@@ -168,51 +182,60 @@ function Setup({ settings, onChange, onStart }: { settings: Settings; onChange: 
     }`;
 
   return (
-    <Card title="Play against the computer" className="mx-auto max-w-lg">
-      <div className="space-y-5">
-        <fieldset>
-          <legend className="mb-2 text-sm font-medium text-slate-700">Difficulty</legend>
-          <div className="grid gap-2 sm:grid-cols-3">
-            {AI_LEVELS.map((level) => (
-              <button
-                key={level}
-                type="button"
-                aria-pressed={settings.level === level}
-                className={option(settings.level === level)}
-                onClick={() => onChange({ ...settings, level })}
-              >
-                <span className="block font-medium">{LEVEL_INFO[level].label}</span>
-                <span className="block text-xs text-slate-500">{LEVEL_INFO[level].hint}</span>
-              </button>
-            ))}
-          </div>
-        </fieldset>
-
-        <fieldset>
-          <legend className="mb-2 text-sm font-medium text-slate-700">Your side</legend>
-          <div className="grid grid-cols-2 gap-2">
-            {(['X', 'O'] as const).map((mark) => (
-              <button
-                key={mark}
-                type="button"
-                aria-pressed={settings.mark === mark}
-                aria-label={`Play ${mark}`}
-                className={`${option(settings.mark === mark)} flex items-center gap-2`}
-                onClick={() => onChange({ ...settings, mark })}
-              >
-                <MarkIcon mark={mark} className="h-5 w-5" />
-                <span>{mark === 'X' ? 'You move first' : 'Computer moves first'}</span>
-              </button>
-            ))}
-          </div>
-        </fieldset>
-
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-xs text-slate-500">Games against the computer are not saved to your history.</p>
-          <Button onClick={onStart}>Start</Button>
-        </div>
+    <div className="mx-auto max-w-lg space-y-4">
+      <div>
+        <h1 className="text-xl font-semibold">Play five in a row against the computer</h1>
+        <p className="mt-1 text-sm text-slate-600">
+          Free and instant, no account needed. Choose a level: Easy for learning, Medium for a solid game, or Hard if you
+          want an opponent that searches deep and finds forced wins.
+        </p>
       </div>
-    </Card>
+      <Card title="New game">
+        <div className="space-y-5">
+          <fieldset>
+            <legend className="mb-2 text-sm font-medium text-slate-700">Difficulty</legend>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {AI_LEVELS.map((level) => (
+                <button
+                  key={level}
+                  type="button"
+                  aria-pressed={settings.level === level}
+                  className={option(settings.level === level)}
+                  onClick={() => onChange({ ...settings, level })}
+                >
+                  <span className="block font-medium">{LEVEL_INFO[level].label}</span>
+                  <span className="block text-xs text-slate-500">{LEVEL_INFO[level].hint}</span>
+                </button>
+              ))}
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend className="mb-2 text-sm font-medium text-slate-700">Your side</legend>
+            <div className="grid grid-cols-2 gap-2">
+              {(['X', 'O'] as const).map((mark) => (
+                <button
+                  key={mark}
+                  type="button"
+                  aria-pressed={settings.mark === mark}
+                  aria-label={`Play ${mark}`}
+                  className={`${option(settings.mark === mark)} flex items-center gap-2`}
+                  onClick={() => onChange({ ...settings, mark })}
+                >
+                  <MarkIcon mark={mark} className="h-5 w-5" />
+                  <span>{mark === 'X' ? 'You move first' : 'Computer moves first'}</span>
+                </button>
+              ))}
+            </div>
+          </fieldset>
+
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs text-slate-500">Games against the computer are not saved to your history.</p>
+            <Button onClick={onStart}>Start</Button>
+          </div>
+        </div>
+      </Card>
+    </div>
   );
 }
 
@@ -231,12 +254,12 @@ function Status({ thinking, winner, draw, myMark }: { thinking: boolean; winner:
 }
 
 function PlayerRow({ mark, active, won, you, level }: { mark: Mark; active: boolean; won: boolean; you?: boolean; level?: AiLevel }) {
-  const me = useMe();
+  const { user } = useAuth();
   return (
     <div className={`flex items-center gap-3 rounded-md border px-3 py-2 ${active ? 'border-slate-400 bg-slate-50' : 'border-slate-100'}`}>
       <MarkIcon mark={mark} className="h-5 w-5 shrink-0" />
       {you ? (
-        <Avatar user={me} size={28} />
+        <Avatar user={user ?? { name: 'You', avatarUrl: null }} size={28} />
       ) : (
         <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-800 text-[11px] font-semibold text-white" aria-hidden>
           AI
@@ -245,7 +268,13 @@ function PlayerRow({ mark, active, won, you, level }: { mark: Mark; active: bool
       <p className="min-w-0 flex-1 truncate text-sm font-medium">
         {you ? (
           <>
-            {me.name} <span className="font-normal text-slate-400">(you)</span>
+            {user ? (
+              <>
+                {user.name} <span className="font-normal text-slate-400">(you)</span>
+              </>
+            ) : (
+              'You'
+            )}
           </>
         ) : (
           <>

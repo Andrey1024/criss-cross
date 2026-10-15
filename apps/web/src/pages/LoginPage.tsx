@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router';
 import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 import { MarkIcon } from '../components/Board';
 import { Button, ErrorNote, inputClass } from '../components/ui';
@@ -32,7 +33,7 @@ export function LoginPage() {
               </span>
             ))}
           </div>
-          <h1 className="text-xl font-bold">Criss-Cross</h1>
+          <h1 className="text-xl font-bold">Sign in to Criss-Cross</h1>
           <p className="mt-1 text-sm text-slate-500">Five in a row, online. Sign in to play.</p>
         </div>
 
@@ -61,6 +62,17 @@ export function LoginPage() {
             </Button>
           </form>
         )}
+
+        <p className="mt-6 border-t border-slate-100 pt-4 text-center text-xs text-slate-500">
+          Just want to try it?{' '}
+          <Link to="/play/computer" className="font-medium text-blue-700 hover:underline">
+            Play the computer without an account
+          </Link>
+          <br />
+          <Link to="/" className="mt-2 inline-block hover:text-slate-800">
+            ← Back to home
+          </Link>
+        </p>
       </div>
     </div>
   );

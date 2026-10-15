@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router';
 import { Events, type ChatMessageDto, type EndReason, type Mark, type PublicUser, type RoomState } from '@cc/shared';
 import { Board, MarkIcon } from '../components/Board';
 import { Chat } from '../components/Chat';
+import { RatingBadge, RatingDiff } from '../components/RatingBadge';
 import { Avatar, Badge, Button, Card, ConfirmButton, Spinner } from '../components/ui';
 import { useMe } from '../lib/auth';
 import { END_REASON_LABEL, errorText } from '../lib/format';
@@ -89,6 +90,9 @@ function RoomPage({ roomId }: { roomId: string }) {
             <PlayerRow mark="X" user={state.players.X} state={state} isMe={myMark === 'X'} />
             <PlayerRow mark="O" user={state.players.O} state={state} isMe={myMark === 'O'} />
           </div>
+          {state.status === 'FINISHED' && state.rated === false && (
+            <p className="mt-2 text-xs text-slate-500">This game was not rated.</p>
+          )}
           <div className="mt-4 flex flex-wrap items-center gap-2">
             {state.status === 'PLAYING' && myMark && (
               <ConfirmButton size="sm" prompt="Resign this game?" confirmLabel="Resign" onConfirm={() => emitAck(Events.GameResign, { roomId })}>
@@ -142,7 +146,9 @@ function PlayerRow({ mark, user, state, isMe }: { mark: Mark; user: PublicUser |
           <Avatar user={user} size={28} />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">
-              {user.name} {isMe && <span className="font-normal text-slate-400">(you)</span>}
+              {user.name} {isMe && <span className="font-normal text-slate-400">(you)</span>}{' '}
+              {state.ratings[mark] && <RatingBadge rating={state.ratings[mark]!} className="font-normal text-slate-500" />}
+              {state.ratingChange && <RatingDiff diff={state.ratingChange[mark]} className="ml-1 text-xs" />}
             </p>
             <p className="text-xs text-slate-500">
               {deadline !== null ? (

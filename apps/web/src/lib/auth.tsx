@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Events, type AuthConfig, type BanInfo, type DevLoginInput, type Me } from '@cc/shared';
+import { Events, SESSION_HINT_COOKIE, type AuthConfig, type BanInfo, type DevLoginInput, type Me } from '@cc/shared';
 import { api, ApiError, setBannedHandler } from './api';
 import { disconnectSocket, getSocket } from './socket';
 
@@ -19,10 +19,16 @@ interface AuthContextValue {
   logout(): Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+export const AuthContext = createContext<AuthContextValue | null>(null);
+
+/** Without the session hint the visitor is almost certainly signed out: show public pages at once. */
+function initialState(): AuthState {
+  const hinted = typeof document !== 'undefined' && document.cookie.split('; ').some((c) => c.startsWith(`${SESSION_HINT_COOKIE}=`));
+  return hinted ? { status: 'loading' } : { status: 'anon' };
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>({ status: 'loading' });
+  const [state, setState] = useState<AuthState>(initialState);
   const [config, setConfig] = useState<AuthConfig | null>(null);
   const queryClient = useQueryClient();
 
@@ -40,7 +46,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setBannedHandler(banned);
 
     api<AuthConfig>('/auth/config').then(setConfig, () => setConfig({ googleClientId: null, devLogin: false }));
-    api<Me>('/me').then((user) => setState({ status: 'authed', user }), handleError);
+    api<{ user: Me | null }>('/auth/session').then(
+      ({ user }) => setState(user ? { status: 'authed', user } : { status: 'anon' }),
+      handleError,
+    );
     return () => setBannedHandler(null);
   }, [handleError, queryClient]);
 

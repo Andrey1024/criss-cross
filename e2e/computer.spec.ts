@@ -1,12 +1,12 @@
 import { expect, test } from '@playwright/test';
 
 test('play against the computer without touching the server', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/login');
   await page.getByLabel('Email').fill(`solo${Date.now()}@example.com`);
   await page.getByLabel('Display name').fill('Solo');
   await page.getByRole('button', { name: 'Sign in without Google' }).click();
 
-  await page.getByRole('link', { name: 'Play vs computer' }).click();
+  await page.getByRole('main').getByRole('link', { name: 'Play vs computer' }).click();
   await page.getByRole('button', { name: /^Easy/ }).click();
   await page.getByRole('button', { name: 'Play X' }).click();
 
@@ -35,7 +35,7 @@ test('play against the computer without touching the server', async ({ page }) =
 });
 
 test('computer opens when the player chooses O', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/login');
   await page.getByLabel('Email').fill(`solo-o${Date.now()}@example.com`);
   await page.getByRole('button', { name: 'Sign in without Google' }).click();
   await expect(page.getByRole('link', { name: 'Lobby' })).toBeVisible();

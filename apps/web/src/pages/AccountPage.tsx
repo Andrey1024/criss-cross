@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import type { GameHistoryPage, Outcome } from '@cc/shared';
+import type { GameHistoryPage, Me, Outcome, RatingPoint } from '@cc/shared';
 import { MarkIcon } from '../components/Board';
+import { RatingBadge, RatingDiff } from '../components/RatingBadge';
+import { RatingChart } from '../components/RatingChart';
 import { Avatar, Badge, Card, ErrorNote, Pager, Spinner } from '../components/ui';
 import { api } from '../lib/api';
 import { useMe } from '../lib/auth';
@@ -18,6 +20,10 @@ export function AccountPage() {
     queryFn: () => api<GameHistoryPage>(`/me/games?page=${page}`),
     placeholderData: keepPreviousData,
   });
+  // The signed-in user object is loaded once; fetch fresh rating fields for this page.
+  const { data: fresh } = useQuery({ queryKey: ['me'], queryFn: () => api<Me>('/me') });
+  const { data: ratingHistory } = useQuery({ queryKey: ['rating-history'], queryFn: () => api<RatingPoint[]>('/me/rating-history') });
+  const rating = fresh ?? me;
   const stats = data?.stats;
   const winRate = stats && stats.played ? Math.round((stats.wins / stats.played) * 100) : null;
 
@@ -33,6 +39,26 @@ export function AccountPage() {
           </p>
         </div>
       </div>
+
+      <Card title="Rating">
+        <div className="grid gap-4 sm:grid-cols-[10rem_1fr]">
+          <div>
+            <p className="text-3xl font-semibold">
+              <RatingBadge rating={rating} />
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              {rating.ratedGames} rated {rating.ratedGames === 1 ? 'game' : 'games'}
+            </p>
+            {rating.provisional && (
+              <p className="mt-2 text-xs text-amber-700">Provisional: your rating settles after a few more rated games.</p>
+            )}
+            <Link to="/leaderboard" className="mt-3 inline-block text-xs font-medium text-blue-700 hover:underline">
+              View leaderboard →
+            </Link>
+          </div>
+          {ratingHistory ? <RatingChart points={ratingHistory} /> : <Spinner />}
+        </div>
+      </Card>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         <Stat label="Games" value={stats?.played} />
@@ -62,6 +88,7 @@ export function AccountPage() {
                     <th className="pb-2 font-medium">You</th>
                     <th className="pb-2 font-medium">Result</th>
                     <th className="pb-2 font-medium">Moves</th>
+                    <th className="pb-2 font-medium">Rating</th>
                     <th className="pb-2" />
                   </tr>
                 </thead>
@@ -83,6 +110,7 @@ export function AccountPage() {
                         <span className="text-xs text-slate-400">{RESULT_LABEL[g.result]}</span>
                       </td>
                       <td className="py-2.5 text-slate-600">{g.moveCount}</td>
+                      <td className="py-2.5">{g.ratingDiff === null ? <span className="text-slate-400">—</span> : <RatingDiff diff={g.ratingDiff} />}</td>
                       <td className="py-2.5 text-right">
                         <Link to={`/games/${g.id}`} className="text-sm font-medium text-blue-700 hover:underline">
                           Replay

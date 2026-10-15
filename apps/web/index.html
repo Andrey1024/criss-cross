@@ -3,8 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Criss-Cross — five in a row online</title>
+    <meta name="theme-color" content="#ffffff" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <title>Criss-Cross — five in a row</title>
+    <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <script>
+      // Signed-in visitors skip the pre-rendered public page while the app loads.
+      if (document.cookie.split('; ').some((c) => c.indexOf('cc_session=') === 0)) document.documentElement.classList.add('has-session');
+    </script>
+    <style>
+      html.has-session [data-prerender] { display: none; }
+    </style>
   </head>
   <body class="bg-slate-50 text-slate-900 antialiased">
     <div id="root"></div>

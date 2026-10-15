@@ -139,7 +139,9 @@ function UserRow({ user }: { user: AdminUser }) {
             {user.activeBan && <Badge tone="red">Banned {banUntil(user.activeBan)}</Badge>}
           </p>
           <p className="truncate text-xs text-slate-500">
-            {user.email} · joined {formatDate(user.createdAt)} · {user.gamesPlayed} {user.gamesPlayed === 1 ? 'game' : 'games'}
+            {user.email} · joined {formatDate(user.createdAt)} · {user.gamesPlayed} {user.gamesPlayed === 1 ? 'game' : 'games'} · rating{' '}
+            {user.rating}
+            {user.provisional && '?'}
           </p>
           {user.activeBan && <p className="mt-0.5 text-xs text-red-700">Reason: {user.activeBan.reason}</p>}
         </div>

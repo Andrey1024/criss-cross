@@ -27,22 +27,28 @@ enum GameResult {
 }
 
 model User {
-  id         String        @id @default(cuid())
+  id               String        @id @default(cuid())
   /// Null for accounts created through dev login.
-  googleId   String?       @unique
-  email      String        @unique
-  name       String
-  avatarUrl  String?
-  role       Role          @default(USER)
-  createdAt  DateTime      @default(now())
-  bans       Ban[]         @relation("BannedUser")
-  bansIssued Ban[]         @relation("BanIssuer")
-  rooms      Room[]
-  gamesAsX   Game[]        @relation("XPlayer")
-  gamesAsO   Game[]        @relation("OPlayer")
-  gamesWon   Game[]        @relation("Winner")
-  moves      Move[]
-  messages   ChatMessage[]
+  googleId         String?       @unique
+  email            String        @unique
+  name             String
+  avatarUrl        String?
+  role             Role          @default(USER)
+  createdAt        DateTime      @default(now())
+  /// Glicko-2 rating, deviation and volatility.
+  rating           Float         @default(1500)
+  ratingDeviation  Float         @default(350)
+  ratingVolatility Float         @default(0.06)
+  ratedGames       Int           @default(0)
+  lastRatedAt      DateTime?
+  bans             Ban[]         @relation("BannedUser")
+  bansIssued       Ban[]         @relation("BanIssuer")
+  rooms            Room[]
+  gamesAsX         Game[]        @relation("XPlayer")
+  gamesAsO         Game[]        @relation("OPlayer")
+  gamesWon         Game[]        @relation("Winner")
+  moves            Move[]
+  messages         ChatMessage[]
 }
 
 model Ban {
@@ -75,23 +81,30 @@ model Room {
 }
 
 model Game {
-  id        String      @id
-  roomId    String
-  room      Room        @relation(fields: [roomId], references: [id])
-  xPlayerId String
-  xPlayer   User        @relation("XPlayer", fields: [xPlayerId], references: [id])
-  oPlayerId String
-  oPlayer   User        @relation("OPlayer", fields: [oPlayerId], references: [id])
-  winnerId  String?
-  winner    User?       @relation("Winner", fields: [winnerId], references: [id])
+  id            String      @id
+  roomId        String
+  room          Room        @relation(fields: [roomId], references: [id])
+  xPlayerId     String
+  xPlayer       User        @relation("XPlayer", fields: [xPlayerId], references: [id])
+  oPlayerId     String
+  oPlayer       User        @relation("OPlayer", fields: [oPlayerId], references: [id])
+  winnerId      String?
+  winner        User?       @relation("Winner", fields: [winnerId], references: [id])
   /// Null while the game is in progress.
-  result    GameResult?
-  startedAt DateTime    @default(now())
-  endedAt   DateTime?
-  moves     Move[]
+  result        GameResult?
+  startedAt     DateTime    @default(now())
+  endedAt       DateTime?
+  moves         Move[]
+  /// Rating fields are set once the finished game has been rated.
+  rated         Boolean     @default(false)
+  xRatingBefore Int?
+  oRatingBefore Int?
+  xRatingDiff   Int?
+  oRatingDiff   Int?
 
   @@index([xPlayerId])
   @@index([oPlayerId])
+  @@index([rated, endedAt])
 }
 
 model Move {

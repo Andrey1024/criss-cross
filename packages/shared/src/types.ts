@@ -16,6 +16,45 @@ export interface Me extends PublicUser {
   email: string;
   role: Role;
   createdAt: string;
+  rating: number;
+  /** Rating is still settling (deviation above the provisional threshold). */
+  provisional: boolean;
+  ratedGames: number;
+}
+
+export interface RatingView {
+  rating: number;
+  provisional: boolean;
+}
+
+export interface RatingPoint {
+  date: string;
+  rating: number;
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  user: PublicUser;
+  rating: number;
+  /** Stats over the leaderboard window. */
+  games: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  ratingChange: number;
+}
+
+export interface LeaderboardResponse {
+  days: number;
+  minGames: number;
+  entries: LeaderboardEntry[];
+  me: {
+    rank: number | null;
+    rating: number;
+    provisional: boolean;
+    games: number;
+    gamesNeeded: number;
+  };
 }
 
 export interface BanInfo {
@@ -35,6 +74,7 @@ export interface LobbyRoom {
   status: 'WAITING' | 'PLAYING';
   host: PublicUser;
   players: { X: PublicUser; O: PublicUser | null };
+  ratings: { X: RatingView; O: RatingView | null };
   createdAt: string;
 }
 
@@ -45,6 +85,10 @@ export interface RoomState {
   boardSize: number;
   host: PublicUser;
   players: { X: PublicUser; O: PublicUser | null };
+  ratings: { X: RatingView; O: RatingView | null };
+  /** Whether the finished game counted for rating; null while undecided or still playing. */
+  rated: boolean | null;
+  ratingChange: { X: number; O: number } | null;
   /** Whether each seated player currently has the room open. */
   connected: { X: boolean; O: boolean };
   /** Epoch ms when an absent player forfeits (PLAYING) or the room closes (WAITING). */
@@ -80,6 +124,8 @@ export interface GameSummary {
   outcome: Outcome;
   result: GameResult;
   moveCount: number;
+  /** Rating change from this game; null if it was unrated. */
+  ratingDiff: number | null;
   startedAt: string;
   endedAt: string;
 }
