@@ -5,6 +5,7 @@ import { useAuth } from './lib/auth';
 import { AccountPage } from './pages/AccountPage';
 import { AdminPage } from './pages/AdminPage';
 import { BannedPage } from './pages/BannedPage';
+import { ComputerPage } from './pages/ComputerPage';
 import { LobbyPage } from './pages/LobbyPage';
 import { LoginPage } from './pages/LoginPage';
 import { ReplayPage } from './pages/ReplayPage';
@@ -21,6 +22,7 @@ export function App() {
       <Route element={<Layout />}>
         <Route index element={<LobbyPage />} />
         <Route path="room/:id" element={<RoomRoute />} />
+        <Route path="play/computer" element={<ComputerPage />} />
         <Route path="account" element={<AccountPage />} />
         <Route path="games/:id" element={<ReplayPage />} />
         {state.user.role === 'ADMIN' && <Route path="admin" element={<AdminPage />} />}

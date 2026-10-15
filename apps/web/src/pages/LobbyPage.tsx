@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { Events, ROOM_NAME_MAX_LENGTH, type LobbyRoom } from '@cc/shared';
 import { MarkIcon } from '../components/Board';
 import { Avatar, Badge, Button, Card, ErrorNote, inputClass, Spinner } from '../components/ui';
@@ -69,21 +69,33 @@ export function LobbyPage() {
         )}
       </div>
 
-      <Card title="Create a room" className="self-start">
-        <form onSubmit={create} className="space-y-3">
-          <label className="block text-sm">
-            <span className="mb-1 block text-slate-600">Room name</span>
-            <input className={`${inputClass} w-full`} value={name} onChange={(e) => setName(e.target.value)} maxLength={ROOM_NAME_MAX_LENGTH} required />
-          </label>
-          <p className="text-xs text-slate-500">
-            You play <MarkIcon mark="X" className="inline h-3.5 w-3.5 align-[-2px]" /> and move first. The game starts when someone joins.
-          </p>
-          {error && <ErrorNote>{error}</ErrorNote>}
-          <Button type="submit" className="w-full" disabled={creating || !name.trim()}>
-            {creating ? 'Creating…' : 'Create room'}
-          </Button>
-        </form>
-      </Card>
+      <div className="space-y-6 self-start">
+        <Card title="Create a room">
+          <form onSubmit={create} className="space-y-3">
+            <label className="block text-sm">
+              <span className="mb-1 block text-slate-600">Room name</span>
+              <input className={`${inputClass} w-full`} value={name} onChange={(e) => setName(e.target.value)} maxLength={ROOM_NAME_MAX_LENGTH} required />
+            </label>
+            <p className="text-xs text-slate-500">
+              You play <MarkIcon mark="X" className="inline h-3.5 w-3.5 align-[-2px]" /> and move first. The game starts when someone joins.
+            </p>
+            {error && <ErrorNote>{error}</ErrorNote>}
+            <Button type="submit" className="w-full" disabled={creating || !name.trim()}>
+              {creating ? 'Creating…' : 'Create room'}
+            </Button>
+          </form>
+        </Card>
+
+        <Card title="Play vs computer">
+          <p className="text-sm text-slate-600">No one around? Practise against the computer on easy, medium or hard. These games aren't saved.</p>
+          <Link
+            to="/play/computer"
+            className="mt-3 inline-flex w-full items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-100"
+          >
+            Play vs computer
+          </Link>
+        </Card>
+      </div>
     </div>
   );
 }

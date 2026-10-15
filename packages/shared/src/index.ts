@@ -1,6 +1,7 @@
 export * from './game';
 export * from './types';
 export * from './schemas';
+export * from './ai';
 
 /** Socket.IO event names shared by client and server. */
 export const Events = {
