@@ -16,9 +16,9 @@ import { useMe } from '../lib/auth';
 import { useAiWorker } from '../lib/useAiWorker';
 
 const LEVEL_INFO: Record<AiLevel, { label: string; hint: string }> = {
-  easy: { label: 'Easy', hint: 'Plays casually. Good for learning the game.' },
-  medium: { label: 'Medium', hint: 'Looks two moves ahead and answers your threats.' },
-  hard: { label: 'Hard', hint: 'Searches up to six moves ahead.' },
+  easy: { label: 'Easy', hint: 'Looks two moves ahead and answers your threats.' },
+  medium: { label: 'Medium', hint: 'Searches up to six moves ahead.' },
+  hard: { label: 'Hard', hint: 'Thinks up to 3 seconds, searches deeper and finds forced wins.' },
 };
 /** Keeps instant replies from feeling abrupt. */
 const MIN_THINK_MS = 350;
