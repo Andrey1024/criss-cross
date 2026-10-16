@@ -18,7 +18,7 @@ export function Layout() {
           <NavLink to="/" className="flex items-center gap-1 text-base font-bold tracking-tight">
             <MarkIcon mark="X" className="h-5 w-5" />
             <MarkIcon mark="O" className="-ml-1 h-5 w-5" />
-            Criss-Cross
+            Five in a Row
           </NavLink>
           {user ? <MemberNav user={user} /> : <GuestNav />}
         </div>
@@ -30,7 +30,7 @@ export function Layout() {
       </main>
       <footer className="border-t border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-5 gap-y-1 px-4 py-4 text-xs text-slate-500">
-          <span>© {new Date().getFullYear()} Criss-Cross · five in a row online</span>
+          <span>© {new Date().getFullYear()} Play Five in a Row · playfiveinarow.com</span>
           <Link to="/rules" className="hover:text-slate-800">
             Rules &amp; strategy
           </Link>

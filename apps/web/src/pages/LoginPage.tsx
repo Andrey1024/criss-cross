@@ -33,7 +33,7 @@ export function LoginPage() {
               </span>
             ))}
           </div>
-          <h1 className="text-xl font-bold">Sign in to Criss-Cross</h1>
+          <h1 className="text-xl font-bold">Sign in to Five in a Row</h1>
           <p className="mt-1 text-sm text-slate-500">Five in a row, online. Sign in to play.</p>
         </div>
 

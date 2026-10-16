@@ -59,7 +59,7 @@ export function RulesPage() {
         </ul>
         <Pattern cells="_XXXXX_" label="Five in a row: X wins." />
         <p>
-          Criss-Cross uses <em>freestyle</em> rules, where a line of six or more also wins. Other variants exist: standard
+          This site uses <em>freestyle</em> rules, where a line of six or more also wins. Other variants exist: standard
           gomoku counts only exactly five, and renju adds restrictions for the first player to balance the game.
         </p>
       </Section>

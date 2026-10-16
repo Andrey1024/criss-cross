@@ -1,4 +1,6 @@
-# Criss-Cross
+# Play Five in a Row
+
+Live at **https://playfiveinarow.com**.
 
 Online five-in-a-row (gomoku). Players put X and O inside the cells of a 15×15 white board, and the first to get five in a row wins. The app includes:
 

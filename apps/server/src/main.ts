@@ -19,6 +19,16 @@ async function bootstrap() {
   config.jwtSecret; // fail fast if missing
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.setGlobalPrefix('api');
+  // Permanent redirect from old domains (e.g. five-in-row.com) to the canonical one.
+  const { canonicalHost, redirectFromHosts } = config;
+  if (canonicalHost && redirectFromHosts.length) {
+    app.use((req: any, res: any, next: () => void) => {
+      const host = String(req.headers.host ?? '').split(':')[0].toLowerCase();
+      if (!redirectFromHosts.includes(host)) return next();
+      const status = req.method === 'GET' || req.method === 'HEAD' ? 301 : 308;
+      res.redirect(status, `https://${canonicalHost}${req.originalUrl}`);
+    });
+  }
   app.use(compression());
   app.use(cookieParser());
   app.enableShutdownHooks();

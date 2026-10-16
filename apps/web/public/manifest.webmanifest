@@ -1,6 +1,6 @@
 {
-  "name": "Criss-Cross — five in a row",
-  "short_name": "Criss-Cross",
+  "name": "Play Five in a Row",
+  "short_name": "Five in a Row",
   "description": "Play five in a row (gomoku) online or against the computer.",
   "start_url": "/",
   "display": "standalone",

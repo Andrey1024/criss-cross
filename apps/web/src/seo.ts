@@ -1,7 +1,7 @@
 /** Per-page <head> data for the public, pre-rendered pages (and the default for the app shell). */
 
-export const SITE_URL = (import.meta.env.VITE_SITE_URL ?? 'https://five-in-row.com').replace(/\/$/, '');
-export const SITE_NAME = 'Criss-Cross';
+export const SITE_URL = (import.meta.env.VITE_SITE_URL ?? 'https://playfiveinarow.com').replace(/\/$/, '');
+export const SITE_NAME = 'Play Five in a Row';
 
 export interface PageMeta {
   path: string;
@@ -19,7 +19,7 @@ export interface FaqItem {
 
 export const FAQ: FaqItem[] = [
   {
-    q: 'Is Criss-Cross free?',
+    q: 'Is it free to play?',
     a: 'Yes. Playing against the computer and against other people is free, with no ads.',
   },
   {
@@ -32,7 +32,7 @@ export const FAQ: FaqItem[] = [
   },
   {
     q: 'Is five in a row the same as gomoku?',
-    a: 'Yes. Five in a row is the common English name for gomoku. Criss-Cross plays freestyle gomoku: five or more marks in a row win.',
+    a: 'Yes. Five in a row is the common English name for gomoku. This site plays freestyle gomoku: five or more marks in a row win.',
   },
   {
     q: 'Does the first player have an advantage?',
@@ -48,7 +48,7 @@ export const PAGES: PageMeta[] = [
   {
     path: '/',
     file: 'index.html',
-    title: 'Five in a Row Online — Play Gomoku Free | Criss-Cross',
+    title: 'Play Five in a Row Online — Free Gomoku Game',
     description:
       'Play five in a row (gomoku) free in your browser. Challenge the computer instantly, no sign-up needed, or play real opponents online with chat, Glicko-2 ratings and a leaderboard.',
     jsonLd: [
@@ -56,7 +56,7 @@ export const PAGES: PageMeta[] = [
         '@context': 'https://schema.org',
         '@type': ['WebApplication', 'Game'],
         name: SITE_NAME,
-        alternateName: ['Five in a Row', 'Gomoku Online'],
+        alternateName: ['Five in a Row', 'Gomoku', 'Five in a Row Online'],
         url: `${SITE_URL}/`,
         description: 'Free online five in a row (gomoku): play the computer or real opponents, with ratings and a leaderboard.',
         applicationCategory: 'GameApplication',
@@ -71,7 +71,7 @@ export const PAGES: PageMeta[] = [
   {
     path: '/rules',
     file: 'rules.html',
-    title: 'How to Play Five in a Row (Gomoku): Rules and Strategy | Criss-Cross',
+    title: 'How to Play Five in a Row (Gomoku): Rules and Strategy',
     description:
       'Five in a row rules in one minute, plus beginner strategy: open threes, fours, double threats and forced wins. Learn gomoku and practise against the computer.',
     jsonLd: [
@@ -85,7 +85,7 @@ export const PAGES: PageMeta[] = [
   {
     path: '/play/computer',
     file: 'play-computer.html',
-    title: 'Play Gomoku Against the Computer — Free, No Sign-up | Criss-Cross',
+    title: 'Play Five in a Row Against the Computer — Free, No Sign-up',
     description:
       'Play five in a row against the computer in your browser. Three difficulty levels, from casual to a Hard AI that finds forced wins. Free, no account needed.',
   },
@@ -95,7 +95,7 @@ export const PAGES: PageMeta[] = [
 export const APP_META: PageMeta = {
   path: '/',
   file: 'app.html',
-  title: 'Criss-Cross — five in a row online',
+  title: 'Play Five in a Row — online gomoku',
   description: 'Play five in a row (gomoku) online: rooms, chat, ratings and a leaderboard.',
 };
 
