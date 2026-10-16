@@ -29,7 +29,8 @@ export function Board({ board, lastMove, winLine, playable, onMove }: BoardProps
   const size = board.length;
   const winSet = new Set(winLine?.map((p) => `${p.x},${p.y}`));
   const style = {
-    '--cell': `min(2.25rem, calc((100vw - 2.5rem) / ${size}))`,
+    // Fit the screen: 1rem gutters each side, minus the 1px grid lines, padding and border.
+    '--cell': `min(2.25rem, calc((100vw - 2rem - ${size + 3}px) / ${size}))`,
     gridTemplateColumns: `repeat(${size}, var(--cell))`,
     gridAutoRows: 'var(--cell)',
   } as CSSProperties;

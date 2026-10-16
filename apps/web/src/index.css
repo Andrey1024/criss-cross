@@ -6,3 +6,10 @@
     cursor: pointer;
   }
 }
+
+/* Phones: hide the bottom tab bar while typing, so the on-screen keyboard has room. */
+@media (max-width: 639px) {
+  body:has(input:focus, textarea:focus) .mobile-tabbar {
+    display: none;
+  }
+}
