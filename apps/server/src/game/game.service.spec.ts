@@ -27,10 +27,10 @@ function setup() {
     to: (to: string) => ({ emit: (event: string, payload: any) => emitted.push({ to, event, payload }) }),
     in: () => ({ socketsLeave: () => {} }),
   };
-  const ratings = { view: () => ({ rating: 1500, provisional: true }), rateGame: async () => null };
+  const ratings = { view: () => ({ rating: 1500, provisional: true }), rateGame: vi.fn(async () => null) };
   const game = new GameService(prisma, ratings as any);
   game.attachServer(server as any);
-  return { game, db, emitted };
+  return { game, db, emitted, ratings };
 }
 
 async function startedGame() {
@@ -140,6 +140,76 @@ describe('GameService', () => {
     const state = game.getState(roomId)!;
     expect(state.winner).toBe('O');
     expect(state.result).toBe('RESIGNED');
+  });
+
+  it('starts a rematch with colours swapped once both players agree', async () => {
+    const { game, roomId, db } = await startedGame();
+    expect(game.rematch(alice, roomId, true)).toBe('GAME_NOT_FINISHED');
+    game.move(alice, roomId, 7, 7);
+    game.resign(bob, roomId);
+    const firstGameId = game.getState(roomId)!.gameId;
+
+    expect(game.rematch(carol, roomId, true)).toBe('NOT_A_PLAYER');
+    expect(game.rematch(bob, roomId, true)).toBeNull();
+    expect(game.getState(roomId)!.rematch).toEqual({ X: false, O: true });
+    expect(game.getState(roomId)!.status).toBe('FINISHED');
+
+    expect(game.rematch(alice, roomId, true)).toBeNull();
+    const state = game.getState(roomId)!;
+    expect(state.status).toBe('PLAYING');
+    expect(state.players.X.id).toBe('bob');
+    expect(state.players.O?.id).toBe('alice');
+    expect(state.host.id).toBe('alice');
+    expect(state.moveCount).toBe(0);
+    expect(state.board.flat().every((c) => c === null)).toBe(true);
+    expect(state).toMatchObject({ winner: null, winLine: null, result: null, endReason: null, rated: null });
+    expect(state.rematch).toEqual({ X: false, O: false });
+    expect(state.gameId).not.toBe(firstGameId);
+    expect(game.lobbyRooms()[0].status).toBe('PLAYING');
+
+    expect(game.move(alice, roomId, 7, 7)).toBe('NOT_YOUR_TURN');
+    expect(game.move(bob, roomId, 7, 7)).toBeNull();
+    await game.settled();
+    const created = db.filter((c) => c.model === 'game' && c.op === 'create').map((c) => c.args.data);
+    expect(created.at(-1)).toMatchObject({ roomId, xPlayerId: 'bob', oPlayerId: 'alice' });
+    // The finished room no longer closes on its timer once the rematch has started.
+    vi.advanceTimersByTime(11 * 60_000);
+    expect(game.hasRoom(roomId)).toBe(true);
+  });
+
+  it('withdraws a rematch offer, and refuses one when the opponent has left', async () => {
+    const { game, roomId } = await startedGame();
+    game.resign(alice, roomId);
+    game.rematch(alice, roomId, true);
+    expect(game.rematch(alice, roomId, false)).toBeNull();
+    expect(game.getState(roomId)!.rematch.X).toBe(false);
+
+    game.rematch(alice, roomId, true);
+    game.leave('alice', roomId, 'a1');
+    expect(game.getState(roomId)!.rematch.X).toBe(false);
+    expect(game.rematch(bob, roomId, true)).toBe('OPPONENT_LEFT');
+  });
+
+  it('keeps unrated rooms out of the lobby and never rates their games', async () => {
+    const { game, db, ratings } = setup();
+    const guest: PublicUser = { id: 'guest1', name: 'Dana', avatarUrl: null, guest: true };
+    const room = await game.createRoom(alice, 'Friendly', true);
+    expect(game.lobbyRooms()).toHaveLength(0);
+    expect(game.invite(room.id)).toMatchObject({ name: 'Friendly', unrated: true, status: 'WAITING' });
+    expect(game.isUnrated(room.id)).toBe(true);
+
+    game.join(alice, room.id, 'a1');
+    game.join(guest, room.id, 'g1');
+    const state = game.getState(room.id)!;
+    expect(state).toMatchObject({ status: 'PLAYING', unrated: true });
+    expect(state.players.O?.name).toBe('Dana');
+    expect(game.lobbyRooms()).toHaveLength(0);
+
+    game.resign(guest, room.id);
+    expect(game.getState(room.id)!.rated).toBe(false);
+    await game.settled();
+    expect(ratings.rateGame).not.toHaveBeenCalled();
+    expect(db.find((c) => c.model === 'room' && c.op === 'create')?.args.data.unrated).toBe(true);
   });
 
   it('kickUser forfeits running games, closes hosted waiting rooms and disconnects sockets', async () => {

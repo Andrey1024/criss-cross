@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
-import { Events, type ChatMessageDto, type EndReason, type Mark, type PublicUser, type RoomState } from '@cc/shared';
+import { Events, otherMark, type ChatMessageDto, type EndReason, type Mark, type PublicUser, type RoomState } from '@cc/shared';
 import { Board, MarkIcon } from '../components/Board';
 import { Chat } from '../components/Chat';
 import { RatingBadge, RatingDiff } from '../components/RatingBadge';
@@ -12,11 +12,12 @@ import { emitAck, getSocket } from '../lib/socket';
 
 export function RoomRoute() {
   const { id } = useParams();
-  return <RoomPage key={id} roomId={id!} />;
+  const me = useMe();
+  return <RoomPage key={id} roomId={id!} me={me} />;
 }
 
-function RoomPage({ roomId }: { roomId: string }) {
-  const me = useMe();
+/** A live room, for a signed-in member or for a guest who joined an unrated room by link. */
+export function RoomPage({ roomId, me }: { roomId: string; me: PublicUser }) {
   const [state, setState] = useState<RoomState | null>(null);
   const [messages, setMessages] = useState<ChatMessageDto[]>([]);
   const [joinError, setJoinError] = useState<string | null>(null);
@@ -45,7 +46,7 @@ function RoomPage({ roomId }: { roomId: string }) {
           {closed ? `Reason: ${END_REASON_LABEL[closed]}.` : errorText(joinError!)}
         </p>
         <Link to="/" className="mt-4 inline-block text-sm font-medium text-blue-700 hover:underline">
-          Back to the lobby
+          {me.guest ? 'Go to the home page' : 'Back to the lobby'}
         </Link>
       </Card>
     );
@@ -65,7 +66,10 @@ function RoomPage({ roomId }: { roomId: string }) {
       <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h1 className="text-lg font-semibold">{state.name}</h1>
+            <h1 className="flex flex-wrap items-center gap-2 text-lg font-semibold">
+              {state.name}
+              {state.unrated && <Badge>Unrated</Badge>}
+            </h1>
             <p className="text-xs text-slate-500">
               {state.moveCount} moves{state.spectators > 0 && ` · ${state.spectators} watching`}
             </p>
@@ -82,6 +86,7 @@ function RoomPage({ roomId }: { roomId: string }) {
           />
         </div>
         {moveError && <p className="text-sm text-red-600">{moveError}</p>}
+        {state.status === 'FINISHED' && state.players.O && <Rematch state={state} myMark={myMark} />}
       </div>
 
       <div className="space-y-4">
@@ -90,8 +95,13 @@ function RoomPage({ roomId }: { roomId: string }) {
             <PlayerRow mark="X" user={state.players.X} state={state} isMe={myMark === 'X'} />
             <PlayerRow mark="O" user={state.players.O} state={state} isMe={myMark === 'O'} />
           </div>
-          {state.status === 'FINISHED' && state.rated === false && (
+          {state.status === 'FINISHED' && state.rated === false && !state.unrated && (
             <p className="mt-2 text-xs text-slate-500">This game was not rated.</p>
+          )}
+          {state.status === 'WAITING' && state.unrated && (
+            <p className="mt-3 text-xs text-slate-500">
+              This room isn't listed in the lobby. Send the invite link to a friend: they can join without an account.
+            </p>
           )}
           <div className="mt-4 flex flex-wrap items-center gap-2">
             {state.status === 'PLAYING' && myMark && (
@@ -100,15 +110,99 @@ function RoomPage({ roomId }: { roomId: string }) {
               </ConfirmButton>
             )}
             {state.status === 'WAITING' && <CopyInvite />}
-            <Link to="/" className="ml-auto text-sm text-slate-600 hover:text-slate-900">
-              ← Lobby
-            </Link>
+            {me.guest ? (
+              <Link to={`/login?next=/room/${roomId}`} className="ml-auto text-sm text-slate-600 hover:text-slate-900">
+                Sign in for rated games
+              </Link>
+            ) : (
+              <Link to="/" className="ml-auto text-sm text-slate-600 hover:text-slate-900">
+                ← Lobby
+              </Link>
+            )}
           </div>
         </Card>
         <Card title="Chat" className="flex h-[26rem] flex-col" bodyClassName="flex min-h-0 flex-1 flex-col">
           <Chat roomId={roomId} messages={messages} />
         </Card>
       </div>
+    </div>
+  );
+}
+
+/** After a game: offer, accept or withdraw a rematch. Spectators just see who has offered. */
+function Rematch({ state, myMark }: { state: RoomState; myMark: Mark | null }) {
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function send(offer: boolean) {
+    setBusy(true);
+    const res = await emitAck(Events.GameRematch, { roomId: state.id, offer });
+    setBusy(false);
+    setError(res.ok ? null : errorText(res.error));
+  }
+
+  if (!myMark) {
+    const offered = (['X', 'O'] as const).filter((m) => state.rematch[m]);
+    if (offered.length === 0) return null;
+    return <p className="text-sm text-slate-600">{state.players[offered[0]]?.name} has offered a rematch.</p>;
+  }
+
+  const opponentMark = otherMark(myMark);
+  const opponent = state.players[opponentMark]!;
+  const iOffered = state.rematch[myMark];
+  const theyOffered = state.rematch[opponentMark];
+  const opponentHere = state.connected[opponentMark];
+
+  let message: string;
+  let action: ReactNode;
+  if (!opponentHere) {
+    message = `${opponent.name} has left the room.`;
+    action = (
+      <Link to="/" className="text-sm font-medium text-blue-700 hover:underline">
+        {myMark && state.players[myMark]?.guest ? 'Go to the home page' : 'Find a new game'}
+      </Link>
+    );
+  } else if (iOffered) {
+    message = `Waiting for ${opponent.name} to accept…`;
+    action = (
+      <Button size="sm" variant="secondary" disabled={busy} onClick={() => send(false)}>
+        Cancel
+      </Button>
+    );
+  } else if (theyOffered) {
+    message = `${opponent.name} wants a rematch.`;
+    action = (
+      <Button size="sm" disabled={busy} onClick={() => send(true)}>
+        Accept rematch
+      </Button>
+    );
+  } else {
+    message = 'Play again in this room?';
+    action = (
+      <Button size="sm" disabled={busy} onClick={() => send(true)}>
+        Rematch
+      </Button>
+    );
+  }
+
+  return (
+    <div
+      role="status"
+      className={`flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border px-4 py-3 ${
+        theyOffered && !iOffered && opponentHere ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200 bg-white'
+      }`}
+    >
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-slate-900">{message}</p>
+        {opponentHere && (
+          <p className="text-xs text-slate-500">
+            Colours swap: you'll play {opponentMark}
+            {opponentMark === 'X' ? ' and move first' : ''}.
+          </p>
+        )}
+        {error && <p className="text-xs text-red-600">{error}</p>}
+      </div>
+      {action}
     </div>
   );
 }
@@ -147,7 +241,10 @@ function PlayerRow({ mark, user, state, isMe }: { mark: Mark; user: PublicUser |
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">
               {user.name} {isMe && <span className="font-normal text-slate-400">(you)</span>}{' '}
-              {state.ratings[mark] && <RatingBadge rating={state.ratings[mark]!} className="font-normal text-slate-500" />}
+              {user.guest && <span className="font-normal text-slate-400">· guest</span>}{' '}
+              {!state.unrated && state.ratings[mark] && (
+                <RatingBadge rating={state.ratings[mark]!} className="font-normal text-slate-500" />
+              )}
               {state.ratingChange && <RatingDiff diff={state.ratingChange[mark]} className="ml-1 text-xs" />}
             </p>
             <p className="text-xs text-slate-500">

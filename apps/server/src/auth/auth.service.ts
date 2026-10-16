@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import type { User } from '@prisma/client';
 import { OAuth2Client } from 'google-auth-library';
-import type { DevLoginInput } from '@cc/shared';
+import type { DevLoginInput, GuestJoinInput } from '@cc/shared';
 import { config } from '../config';
 import { PrismaService } from '../prisma.service';
 import { activeBanWhere, toBanInfo } from '../common/mappers';
@@ -10,6 +10,13 @@ import { BannedException } from './banned.exception';
 import { RatingService } from '../rating/rating.service';
 
 export const TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
+export const GUEST_TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60;
+
+interface TokenPayload {
+  sub: string;
+  /** Set on guest tokens, which are only good for joining unrated rooms. */
+  guest?: true;
+}
 
 @Injectable()
 export class AuthService {
@@ -56,7 +63,7 @@ export class AuthService {
   }
 
   private async finishLogin(user: User): Promise<User> {
-    if (user.role !== 'ADMIN' && config.adminEmails.includes(user.email)) {
+    if (user.role !== 'ADMIN' && user.email && config.adminEmails.includes(user.email)) {
       user = await this.prisma.user.update({ where: { id: user.id }, data: { role: 'ADMIN' } });
     }
     await this.assertNotBanned(user.id);
@@ -68,27 +75,51 @@ export class AuthService {
     return this.jwt.sign({ sub: user.id }, { secret: config.jwtSecret, expiresIn: TOKEN_TTL_SECONDS });
   }
 
+  signGuestToken(guest: User): string {
+    const payload: TokenPayload = { sub: guest.id, guest: true };
+    return this.jwt.sign(payload, { secret: config.jwtSecret, expiresIn: GUEST_TOKEN_TTL_SECONDS });
+  }
+
   /**
-   * Resolves the user behind a session token. Returns null for a missing/invalid token or
-   * deleted user, and throws BannedException if the user has an active ban — so a ban takes
-   * effect on the very next request, even for tokens issued before it.
+   * Resolves the user behind a session token. Returns null for a missing/invalid token, a guest
+   * token or a deleted user, and throws BannedException if the user has an active ban — so a ban
+   * takes effect on the very next request, even for tokens issued before it.
    */
   async userFromToken(token: string | undefined): Promise<User | null> {
+    const user = await this.resolve(token, false);
+    if (user) this.ratings.remember(user);
+    return user;
+  }
+
+  /** Like userFromToken, for the guest cookie: only guest tokens of guest users resolve. */
+  guestFromToken(token: string | undefined): Promise<User | null> {
+    return this.resolve(token, true);
+  }
+
+  /** Creates a guest, or renames the one behind an existing guest token. */
+  async joinAsGuest(token: string | undefined, { name }: GuestJoinInput): Promise<User> {
+    const existing = await this.guestFromToken(token);
+    if (existing) return this.prisma.user.update({ where: { id: existing.id }, data: { name } });
+    return this.prisma.user.create({ data: { name, isGuest: true } });
+  }
+
+  private async resolve(token: string | undefined, guest: boolean): Promise<User | null> {
     if (!token) return null;
-    let sub: string;
+    let payload: TokenPayload;
     try {
-      sub = this.jwt.verify<{ sub: string }>(token, { secret: config.jwtSecret }).sub;
+      payload = this.jwt.verify<TokenPayload>(token, { secret: config.jwtSecret });
     } catch {
       return null;
     }
+    // Guest and member tokens are never interchangeable, whichever cookie they arrive in.
+    if (Boolean(payload.guest) !== guest) return null;
     const user = await this.prisma.user.findUnique({
-      where: { id: sub },
+      where: { id: payload.sub },
       include: { bans: { where: activeBanWhere(), orderBy: { createdAt: 'desc' }, take: 1 } },
     });
-    if (!user) return null;
+    if (!user || user.isGuest !== guest) return null;
     const { bans, ...rest } = user;
     if (bans[0]) throw new BannedException(toBanInfo(bans[0]));
-    this.ratings.remember(rest);
     return rest;
   }
 

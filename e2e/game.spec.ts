@@ -54,3 +54,33 @@ test('two players play a full game, chat, and see it in their history', async ({
   await alice.getByRole('link', { name: 'Replay' }).first().click();
   await expect(alice.getByText('9 / 9')).toBeVisible();
 });
+
+test('players start a rematch in the same room with colours swapped', async ({ browser }) => {
+  const tag = Date.now();
+  const alice = await signIn(browser, `alice-r${tag}@example.com`, 'Alice');
+  const bob = await signIn(browser, `bob-r${tag}@example.com`, 'Bob');
+
+  const roomName = `Rematch ${tag}`;
+  await alice.getByLabel('Room name').fill(roomName);
+  await alice.getByRole('button', { name: 'Create room' }).click();
+  await bob.locator('li', { hasText: roomName }).getByRole('button', { name: 'Join' }).click();
+  await expect(alice.getByText('Your turn')).toBeVisible();
+
+  await cell(alice, 7, 7).click();
+  await expect(bob.getByText('Your turn')).toBeVisible();
+  await bob.getByRole('button', { name: 'Resign' }).click();
+  await bob.getByRole('button', { name: 'Resign' }).last().click();
+  await expect(alice.getByText(/You won/)).toBeVisible();
+
+  await bob.getByRole('button', { name: 'Rematch' }).click();
+  await expect(bob.getByText('Waiting for Alice to accept…')).toBeVisible();
+  await expect(alice.getByText('Bob wants a rematch.')).toBeVisible();
+  await alice.getByRole('button', { name: 'Accept rematch' }).click();
+
+  // Bob now plays X and moves first on an empty board.
+  await expect(bob.getByText('Your turn')).toBeVisible();
+  await expect(alice.getByText("Opponent's turn")).toBeVisible();
+  await expect(alice.getByText('0 moves')).toBeVisible();
+  await cell(bob, 3, 3).click();
+  await expect(alice.getByText('Your turn')).toBeVisible();
+});

@@ -10,6 +10,8 @@ export interface PublicUser {
   id: string;
   name: string;
   avatarUrl: string | null;
+  /** Joined an unrated room by link with just a display name. */
+  guest?: boolean;
 }
 
 export interface Me extends PublicUser {
@@ -82,6 +84,8 @@ export interface RoomState {
   id: string;
   name: string;
   status: 'WAITING' | 'PLAYING' | 'FINISHED';
+  /** Joined by link, guests allowed, never rated, not listed in the lobby. */
+  unrated: boolean;
   boardSize: number;
   host: PublicUser;
   players: { X: PublicUser; O: PublicUser | null };
@@ -89,6 +93,8 @@ export interface RoomState {
   /** Whether the finished game counted for rating; null while undecided or still playing. */
   rated: boolean | null;
   ratingChange: { X: number; O: number } | null;
+  /** Which players want a rematch after a finished game; both → a new game with colours swapped. */
+  rematch: { X: boolean; O: boolean };
   /** Whether each seated player currently has the room open. */
   connected: { X: boolean; O: boolean };
   /** Epoch ms when an absent player forfeits (PLAYING) or the room closes (WAITING). */
@@ -103,6 +109,15 @@ export interface RoomState {
   endReason: EndReason | null;
   gameId: string | null;
   spectators: number;
+}
+
+/** What a visitor with an invite link sees before joining. */
+export interface RoomInvite {
+  id: string;
+  name: string;
+  host: PublicUser;
+  unrated: boolean;
+  status: RoomState['status'];
 }
 
 export interface ChatMessageDto {

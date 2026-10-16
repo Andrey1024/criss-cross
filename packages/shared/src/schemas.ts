@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const CHAT_MAX_LENGTH = 500;
 export const ROOM_NAME_MAX_LENGTH = 40;
+export const GUEST_NAME_MAX_LENGTH = 30;
 export const BAN_DURATIONS_DAYS = [1, 7, 30] as const;
 
 const id = z.string().min(1).max(64);
@@ -14,8 +15,14 @@ export const devLoginSchema = z.object({
 });
 export const createRoomSchema = z.object({
   name: z.string().trim().min(1).max(ROOM_NAME_MAX_LENGTH),
+  unrated: z.boolean().default(false),
+});
+export const guestJoinSchema = z.object({
+  name: z.string().trim().min(1).max(GUEST_NAME_MAX_LENGTH),
 });
 export const roomRefSchema = z.object({ roomId: id });
+/** offer: true to offer (or accept) a rematch, false to withdraw the offer. */
+export const rematchSchema = z.object({ roomId: id, offer: z.boolean() });
 export const moveSchema = z.object({ roomId: id, x: coord, y: coord });
 export const chatSendSchema = z.object({
   roomId: id,
@@ -37,3 +44,5 @@ export const adminUsersQuerySchema = pageQuerySchema.extend({
 
 export type DevLoginInput = z.infer<typeof devLoginSchema>;
 export type BanInput = z.infer<typeof banSchema>;
+export type CreateRoomInput = z.infer<typeof createRoomSchema>;
+export type GuestJoinInput = z.infer<typeof guestJoinSchema>;

@@ -1,9 +1,19 @@
 import { Body, Controller, Get, HttpCode, NotFoundException, Post, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import type { User } from '@prisma/client';
-import { AUTH_COOKIE, SESSION_HINT_COOKIE, devLoginSchema, googleLoginSchema, type AuthConfig, type DevLoginInput, type Me } from '@cc/shared';
+import {
+  AUTH_COOKIE,
+  GUEST_COOKIE,
+  SESSION_HINT_COOKIE,
+  devLoginSchema,
+  googleLoginSchema,
+  type AuthConfig,
+  type DevLoginInput,
+  type Me,
+  type PublicUser,
+} from '@cc/shared';
 import { config } from '../config';
-import { toMe } from '../common/mappers';
+import { toMe, toPublicUser } from '../common/mappers';
 import { ZodPipe } from '../common/zod.pipe';
 import { AuthService, TOKEN_TTL_SECONDS } from './auth.service';
 import { Public } from './decorators';
@@ -36,6 +46,14 @@ export class AuthController {
     }
     if (!req.cookies?.[SESSION_HINT_COOKIE]) setSessionHint(res);
     return { user: toMe(user) };
+  }
+
+  /** The guest identity from an unrated room's invite link, if this browser has one. */
+  @Public()
+  @Get('guest')
+  async guest(@Req() req: Request): Promise<{ guest: PublicUser | null }> {
+    const guest = await this.auth.guestFromToken(req.cookies?.[GUEST_COOKIE]);
+    return { guest: guest ? toPublicUser(guest) : null };
   }
 
   @Public()

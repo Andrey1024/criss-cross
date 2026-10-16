@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "Room" ADD COLUMN     "unrated" BOOLEAN NOT NULL DEFAULT false;
+
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN     "isGuest" BOOLEAN NOT NULL DEFAULT false,
+ALTER COLUMN "email" DROP NOT NULL;

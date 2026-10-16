@@ -19,6 +19,7 @@ import {
   type PlayedMove,
   type Point,
   type PublicUser,
+  type RoomInvite,
   type RoomState,
 } from '@cc/shared';
 import { PrismaService } from '../prisma.service';
@@ -35,6 +36,8 @@ export type GameError =
   | 'GAME_NOT_ACTIVE'
   | 'NOT_A_PLAYER'
   | 'NOT_YOUR_TURN'
+  | 'GAME_NOT_FINISHED'
+  | 'OPPONENT_LEFT'
   | 'OUT_OF_BOUNDS'
   | 'CELL_TAKEN';
 
@@ -43,6 +46,8 @@ interface LiveRoom {
   name: string;
   host: PublicUser;
   boardSize: number;
+  /** Joined by link, guests allowed, never rated, not listed in the lobby. */
+  unrated: boolean;
   createdAt: Date;
   status: RoomState['status'];
   players: { X: PublicUser; O: PublicUser | null };
@@ -57,6 +62,7 @@ interface LiveRoom {
   /** Whether the finished game was rated (null until known) and the rating changes. */
   rated: boolean | null;
   ratingChange: RatingChange | null;
+  rematch: Record<Mark, boolean>;
   /** userId -> ids of that user's sockets currently in the room. */
   presence: Map<string, Set<string>>;
   /** Grace timers for absent players (or an absent host of a waiting room). */
@@ -111,6 +117,15 @@ export class GameService implements OnModuleInit {
     return this.rooms.has(roomId);
   }
 
+  isUnrated(roomId: string): boolean {
+    return this.rooms.get(roomId)?.unrated ?? false;
+  }
+
+  invite(roomId: string): RoomInvite | null {
+    const room = this.rooms.get(roomId);
+    return room ? { id: room.id, name: room.name, host: room.host, unrated: room.unrated, status: room.status } : null;
+  }
+
   isInRoom(roomId: string, userId: string): boolean {
     return this.rooms.get(roomId)?.presence.has(userId) ?? false;
   }
@@ -122,7 +137,7 @@ export class GameService implements OnModuleInit {
 
   lobbyRooms(): LobbyRoom[] {
     return [...this.rooms.values()]
-      .filter((r) => r.status !== 'FINISHED')
+      .filter((r) => r.status !== 'FINISHED' && !r.unrated)
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
       .map((r) => this.toLobbyRoom(r));
   }
@@ -135,13 +150,14 @@ export class GameService implements OnModuleInit {
 
   // ---- room lifecycle ------------------------------------------------------------------
 
-  async createRoom(host: PublicUser, name: string): Promise<LobbyRoom> {
-    const row = await this.prisma.room.create({ data: { name, hostId: host.id, boardSize: BOARD_SIZE } });
+  async createRoom(host: PublicUser, name: string, unrated = false): Promise<LobbyRoom> {
+    const row = await this.prisma.room.create({ data: { name, hostId: host.id, boardSize: BOARD_SIZE, unrated } });
     const room: LiveRoom = {
       id: row.id,
       name: row.name,
       host,
       boardSize: row.boardSize,
+      unrated,
       createdAt: row.createdAt,
       status: 'WAITING',
       players: { X: host, O: null },
@@ -155,6 +171,7 @@ export class GameService implements OnModuleInit {
       endReason: null,
       rated: null,
       ratingChange: null,
+      rematch: { X: false, O: false },
       presence: new Map(),
       away: new Map(),
       cleanupTimer: null,
@@ -195,11 +212,16 @@ export class GameService implements OnModuleInit {
     if (sockets.size > 0) return;
 
     room.presence.delete(userId);
-    if (room.status === 'PLAYING' && this.markOf(room, userId)) this.scheduleAway(room, userId);
+    const mark = this.markOf(room, userId);
+    if (room.status === 'PLAYING' && mark) this.scheduleAway(room, userId);
     else if (room.status === 'WAITING' && userId === room.host.id) this.scheduleAway(room, userId);
-    else if (room.status === 'FINISHED' && room.presence.size === 0) {
-      this.dispose(room);
-      return;
+    else if (room.status === 'FINISHED') {
+      if (room.presence.size === 0) {
+        this.dispose(room);
+        return;
+      }
+      // A player who left can't start the rematch they offered.
+      if (mark) room.rematch[mark] = false;
     }
     this.broadcastRoom(room);
   }
@@ -241,6 +263,28 @@ export class GameService implements OnModuleInit {
     const mark = this.markOf(room, user.id);
     if (!mark) return 'NOT_A_PLAYER';
     this.endGame(room, otherMark(mark), 'RESIGNED', 'resigned');
+    return null;
+  }
+
+  /**
+   * Offers, accepts or withdraws a rematch after a finished game. Once both players want one, a
+   * new game starts in the same room with colours swapped, so each player gets to move first.
+   */
+  rematch(user: PublicUser, roomId: string, offer: boolean): GameError | null {
+    const room = this.rooms.get(roomId);
+    if (!room) return 'ROOM_NOT_FOUND';
+    if (room.status !== 'FINISHED' || !room.players.O) return 'GAME_NOT_FINISHED';
+    const mark = this.markOf(room, user.id);
+    if (!mark) return 'NOT_A_PLAYER';
+    if (offer && !room.presence.has(room.players[otherMark(mark)]!.id)) return 'OPPONENT_LEFT';
+
+    room.rematch[mark] = offer;
+    if (room.rematch.X && room.rematch.O) {
+      this.clearCleanup(room);
+      room.players = { X: room.players.O, O: room.players.X };
+      this.startGame(room);
+    }
+    this.broadcastRoom(room);
     return null;
   }
 
@@ -299,12 +343,20 @@ export class GameService implements OnModuleInit {
     room.board = createBoard(room.boardSize);
     room.turn = 'X';
     room.moves = [];
+    room.winner = null;
+    room.winLine = null;
+    room.result = null;
+    room.endReason = null;
+    room.rated = null;
+    room.ratingChange = null;
+    room.rematch = { X: false, O: false };
+    const xPlayerId = room.players.X.id;
     this.persist(room, () =>
-      this.prisma.game.create({ data: { id: gameId, roomId: room.id, xPlayerId: room.players.X.id, oPlayerId: O.id } }),
+      this.prisma.game.create({ data: { id: gameId, roomId: room.id, xPlayerId, oPlayerId: O.id } }),
     );
     this.persist(room, () => this.prisma.room.update({ where: { id: room.id }, data: { status: 'PLAYING' } }));
-    // If the host isn't in the room right now, their grace period restarts as a player.
-    if (!room.presence.has(room.players.X.id)) this.scheduleAway(room, room.players.X.id);
+    // A seated player who isn't in the room right now gets the usual grace period to come back.
+    for (const player of [room.players.X, O]) if (!room.presence.has(player.id)) this.scheduleAway(room, player.id);
     this.broadcastLobby();
   }
 
@@ -322,13 +374,20 @@ export class GameService implements OnModuleInit {
       this.prisma.game.update({ where: { id: gameId }, data: { winnerId, result, endedAt: new Date() } }),
     );
     this.persist(room, () => this.prisma.room.update({ where: { id: room.id }, data: { status: 'FINISHED' } }));
-    // Rate after the result is stored; tell the room once the new ratings are known.
-    this.persist(room, async () => {
-      const change = await this.ratings.rateGame(gameId);
-      room.rated = change !== null;
-      room.ratingChange = change;
-      if (this.rooms.get(room.id) === room) this.broadcastRoom(room);
-    });
+    if (room.unrated) {
+      room.rated = false;
+    } else {
+      // Rate after the result is stored; tell the room once the new ratings are known.
+      this.persist(room, async () => {
+        const change = await this.ratings.rateGame(gameId);
+        // A rematch may already be running; its own result must not show this game's changes.
+        if (room.gameId === gameId) {
+          room.rated = change !== null;
+          room.ratingChange = change;
+        }
+        if (this.rooms.get(room.id) === room) this.broadcastRoom(room);
+      });
+    }
 
     this.broadcastRoom(room);
     this.broadcastLobby();
@@ -417,11 +476,13 @@ export class GameService implements OnModuleInit {
       name: room.name,
       status: room.status,
       boardSize: room.boardSize,
+      unrated: room.unrated,
       host: room.host,
       players: room.players,
       ratings: this.ratingsOf(room),
       rated: room.rated,
       ratingChange: room.ratingChange,
+      rematch: { ...room.rematch },
       connected: { X: room.presence.has(X.id), O: O ? room.presence.has(O.id) : false },
       awayDeadline: {
         X: room.away.get(X.id)?.deadline ?? null,

@@ -15,6 +15,7 @@ export function LobbyPage() {
   const navigate = useNavigate();
   const [rooms, setRooms] = useState<LobbyRoom[] | null>(null);
   const [name, setName] = useState(`${me.name}'s room`.slice(0, ROOM_NAME_MAX_LENGTH));
+  const [unrated, setUnrated] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,7 +27,7 @@ export function LobbyPage() {
     e.preventDefault();
     setCreating(true);
     try {
-      const room = await api<LobbyRoom>('/rooms', { method: 'POST', json: { name } });
+      const room = await api<LobbyRoom>('/rooms', { method: 'POST', json: { name, unrated } });
       navigate(`/room/${room.id}`);
     } catch (err) {
       setError((err as Error).message);
@@ -76,6 +77,20 @@ export function LobbyPage() {
             <label className="block text-sm">
               <span className="mb-1 block text-slate-600">Room name</span>
               <input className={`${inputClass} w-full`} value={name} onChange={(e) => setName(e.target.value)} maxLength={ROOM_NAME_MAX_LENGTH} required />
+            </label>
+            <label className="flex cursor-pointer items-start gap-2.5 rounded-md border border-slate-200 p-3 text-sm has-[:checked]:border-slate-400 has-[:checked]:bg-slate-50">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 accent-slate-900"
+                checked={unrated}
+                onChange={(e) => setUnrated(e.target.checked)}
+              />
+              <span>
+                <span className="block font-medium text-slate-800">Unrated, invite only</span>
+                <span className="block text-xs text-slate-500">
+                  Hidden from the lobby. Anyone with the link can join, no account needed.
+                </span>
+              </span>
             </label>
             <p className="text-xs text-slate-500">
               You play <MarkIcon mark="X" className="inline h-3.5 w-3.5 align-[-2px]" /> and move first. The game starts when someone joins.

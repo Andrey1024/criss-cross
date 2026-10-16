@@ -12,9 +12,11 @@ import { parse as parseCookie } from 'cookie';
 import type { Server, Socket } from 'socket.io';
 import {
   AUTH_COOKIE,
+  GUEST_COOKIE,
   chatSendSchema,
   Events,
   moveSchema,
+  rematchSchema,
   roomRefSchema,
   type Ack,
   type PublicUser,
@@ -28,6 +30,8 @@ import { GameService, LOBBY_CHANNEL, roomChannel } from './game.service';
 
 interface SocketData {
   user: PublicUser;
+  /** Guests may only join unrated rooms. */
+  guest: boolean;
   roomId?: string;
 }
 type AppSocket = Socket<any, any, any, SocketData>;
@@ -51,10 +55,13 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     // Authenticate during the handshake, so no event handler ever runs for an anonymous socket.
     server.use(async (socket: AppSocket, next) => {
       try {
-        const token = parseCookie(socket.handshake.headers.cookie ?? '')[AUTH_COOKIE];
-        const user = await this.auth.userFromToken(token);
-        if (!user) return next(new Error('UNAUTHORIZED'));
-        socket.data.user = toPublicUser(user);
+        const cookies = parseCookie(socket.handshake.headers.cookie ?? '');
+        // A signed-in session wins over a guest identity left over from an invite link.
+        const user = await this.auth.userFromToken(cookies[AUTH_COOKIE]);
+        const guest = user ? null : await this.auth.guestFromToken(cookies[GUEST_COOKIE]);
+        if (!user && !guest) return next(new Error('UNAUTHORIZED'));
+        socket.data.user = toPublicUser((user ?? guest)!);
+        socket.data.guest = !user;
         next();
       } catch (err) {
         if (err instanceof BannedException) {
@@ -78,6 +85,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
   @SubscribeMessage(Events.LobbySubscribe)
   lobbySubscribe(@ConnectedSocket() socket: AppSocket) {
+    if (socket.data.guest) return;
     socket.join(LOBBY_CHANNEL);
     socket.emit(Events.LobbyRooms, this.game.lobbyRooms());
   }
@@ -95,6 +103,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
     if (socket.data.roomId && socket.data.roomId !== roomId) this.leaveCurrentRoom(socket);
     if (!this.game.hasRoom(roomId)) return fail('ROOM_NOT_FOUND');
+    if (socket.data.guest && !this.game.isUnrated(roomId)) return fail('SIGN_IN_REQUIRED');
 
     socket.join(roomChannel(roomId));
     socket.data.roomId = roomId;
@@ -123,6 +132,14 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     const parsed = roomRefSchema.safeParse(body);
     if (!parsed.success) return fail('INVALID_PAYLOAD');
     const error = this.game.resign(socket.data.user, parsed.data.roomId);
+    return error ? fail(error) : { ok: true, data: undefined };
+  }
+
+  @SubscribeMessage(Events.GameRematch)
+  gameRematch(@ConnectedSocket() socket: AppSocket, @MessageBody() body: unknown): Ack {
+    const parsed = rematchSchema.safeParse(body);
+    if (!parsed.success) return fail('INVALID_PAYLOAD');
+    const error = this.game.rematch(socket.data.user, parsed.data.roomId, parsed.data.offer);
     return error ? fail(error) : { ok: true, data: undefined };
   }
 

@@ -83,7 +83,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await api('/auth/logout', { method: 'POST' });
         disconnectSocket();
         queryClient.clear();
-        setState({ status: 'anon' });
+        // Load the home page afresh: signing out on a members-only page would otherwise
+        // redirect to the login screen.
+        window.location.replace('/');
       },
     };
   }, [state, config, queryClient]);

@@ -45,6 +45,16 @@ Sign-in flow: Google returns an ID token to the browser. The server checks it wi
 
 Any account whose email is listed in `ADMIN_EMAILS` (comma-separated) becomes an admin when it signs in. Admins can then promote other users from the admin panel.
 
+### Unrated rooms and guests
+
+When creating a room, a signed-in player can tick **Unrated, invite only**. Such rooms:
+
+- are not listed in the lobby, so the host shares the room link;
+- can be joined without an account: a signed-out visitor opening the link just picks a display name;
+- are never rated, though the games still appear in signed-in players' history.
+
+A guest is stored as a `User` row with `isGuest = true` and no email, so games, moves and chat work unchanged. The guest gets its own httpOnly cookie (`cc_guest`, valid for 30 days), which is accepted only on the socket, and only for unrated rooms. A guest token is never accepted as a signed-in session, and guests are hidden from the admin user list.
+
 ## Banning
 
 To ban a user, open **Admin → Users → Ban** and give a reason and a duration (1, 7 or 30 days, or permanent). The ban takes effect immediately:
@@ -58,7 +68,8 @@ Each ban is stored as its own row (`Ban` table), so the admin panel can show the
 
 ## Game rules and timeouts
 
-- X (the room's host) always moves first. Five **or more** in a row wins.
+- X always moves first; in the first game of a room the host plays X. Five **or more** in a row wins.
+- After a game, either player can offer a **rematch**. When the other accepts, a new rated game starts in the same room with colours swapped. An offer is withdrawn if its player leaves the room.
 - The first person to join a waiting room becomes O. Anyone who joins after that watches the game and can use the chat.
 - A player who disconnects has **30 seconds** to come back before they forfeit. A waiting room closes if its host stays away for 30 seconds.
 - A finished room stays open for 10 minutes, so players can see the result and keep chatting.

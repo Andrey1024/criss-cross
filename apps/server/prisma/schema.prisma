@@ -30,8 +30,11 @@ model User {
   id               String        @id @default(cuid())
   /// Null for accounts created through dev login.
   googleId         String?       @unique
-  email            String        @unique
+  /// Null for guests.
+  email            String?       @unique
   name             String
+  /// Guests join unrated rooms by link with just a display name; they can't sign in or use the lobby.
+  isGuest          Boolean       @default(false)
   avatarUrl        String?
   role             Role          @default(USER)
   createdAt        DateTime      @default(now())
@@ -73,6 +76,8 @@ model Room {
   host      User          @relation(fields: [hostId], references: [id])
   status    RoomStatus    @default(WAITING)
   boardSize Int           @default(15)
+  /// Unrated rooms are joined by link (guests allowed) and are not listed in the lobby.
+  unrated   Boolean       @default(false)
   createdAt DateTime      @default(now())
   games     Game[]
   messages  ChatMessage[]

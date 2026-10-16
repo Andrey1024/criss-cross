@@ -25,7 +25,8 @@ export class AdminService {
   ) {}
 
   async users(q: { page: number; search?: string; banned?: 'true' | 'false' }): Promise<AdminUsersPage> {
-    const where: Prisma.UserWhereInput = {};
+    // Guests are throwaway identities from unrated-room links, not accounts.
+    const where: Prisma.UserWhereInput = { isGuest: false };
     if (q.search) {
       where.OR = [
         { name: { contains: q.search, mode: 'insensitive' } },

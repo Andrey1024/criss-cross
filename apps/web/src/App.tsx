@@ -13,6 +13,7 @@ const AccountPage = lazy(() => import('./pages/AccountPage').then((m) => ({ defa
 const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })));
 const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage').then((m) => ({ default: m.LeaderboardPage })));
 const ReplayPage = lazy(() => import('./pages/ReplayPage').then((m) => ({ default: m.ReplayPage })));
+const GuestRoomRoute = lazy(() => import('./pages/GuestRoomPage').then((m) => ({ default: m.GuestRoomRoute })));
 const RoomRoute = lazy(() => import('./pages/RoomPage').then((m) => ({ default: m.RoomRoute })));
 const LobbyPage = lazy(() => import('./pages/LobbyPage').then((m) => ({ default: m.LobbyPage })));
 const LoginPage = lazy(() => import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })));
@@ -52,7 +53,11 @@ export function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </>
         ) : (
-          <Route path="*" element={<RedirectToLogin />} />
+          <>
+            {/* Unrated rooms can be joined by link without an account. */}
+            <Route path="room/:id" element={<GuestRoomRoute />} />
+            <Route path="*" element={<RedirectToLogin />} />
+          </>
         )}
       </Route>
     </Routes>
