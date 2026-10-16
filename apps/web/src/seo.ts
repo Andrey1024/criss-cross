@@ -2,6 +2,8 @@
 
 export const SITE_URL = (import.meta.env.VITE_SITE_URL ?? 'https://playfiveinarow.com').replace(/\/$/, '');
 export const SITE_NAME = 'Play Five in a Row';
+/** Public contact address shown on the privacy and terms pages. */
+export const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL ?? 'support@playfiveinarow.com';
 
 export interface PageMeta {
   path: string;
@@ -92,6 +94,18 @@ export const PAGES: PageMeta[] = [
     title: 'Play Five in a Row Against the Computer — Free, No Sign-up',
     description:
       'Play five in a row against the computer in your browser. Three difficulty levels, from casual to a Hard AI that finds forced wins. Free, no account needed.',
+  },
+  {
+    path: '/privacy',
+    file: 'privacy.html',
+    title: `Privacy Policy — ${SITE_NAME}`,
+    description: 'What Play Five in a Row stores about you, why, the cookies it uses, and how to have your data deleted.',
+  },
+  {
+    path: '/terms',
+    file: 'terms.html',
+    title: `Terms of Service — ${SITE_NAME}`,
+    description: 'The terms for using Play Five in a Row: fair play, moderation and your account.',
   },
 ];
 

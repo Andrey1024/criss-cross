@@ -63,6 +63,12 @@ export function Layout() {
           <Link to="/play/computer" className="hover:text-slate-800">
             Play vs computer
           </Link>
+          <Link to="/privacy" className="hover:text-slate-800">
+            Privacy
+          </Link>
+          <Link to="/terms" className="hover:text-slate-800">
+            Terms
+          </Link>
         </div>
       </footer>
       <TabBar tabs={user ? MEMBER_TABS : GUEST_TABS} />

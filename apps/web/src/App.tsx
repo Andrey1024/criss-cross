@@ -6,6 +6,7 @@ import { useAuth } from './lib/auth';
 import { BannedPage } from './pages/BannedPage';
 import { ComputerPage } from './pages/ComputerPage';
 import { LandingPage } from './pages/LandingPage';
+import { PrivacyPage, TermsPage } from './pages/LegalPages';
 import { RulesPage } from './pages/RulesPage';
 
 // Everything except the public pages is loaded on demand, keeping the landing page light.
@@ -43,6 +44,8 @@ export function App() {
         <Route index element={user ? <LobbyPage /> : <LandingPage />} />
         <Route path="rules" element={<RulesPage />} />
         <Route path="play/computer" element={<ComputerPage />} />
+        <Route path="privacy" element={<PrivacyPage />} />
+        <Route path="terms" element={<TermsPage />} />
         {user ? (
           <>
             <Route path="room/:id" element={<RoomRoute />} />

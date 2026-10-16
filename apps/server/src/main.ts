@@ -13,6 +13,8 @@ import { config } from './config';
 const PRERENDERED: Record<string, string> = {
   '/rules': 'rules.html',
   '/play/computer': 'play-computer.html',
+  '/privacy': 'privacy.html',
+  '/terms': 'terms.html',
 };
 
 async function bootstrap() {

@@ -32,3 +32,13 @@ test('protected pages send guests to sign in and back again', async ({ page }) =
   await expect(page.getByRole('heading', { name: /Open rooms/ })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Play five in a row online' })).toHaveCount(0);
 });
+
+test('privacy policy and terms are public and linked from the footer', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('contentinfo').getByRole('link', { name: 'Privacy' }).click();
+  await expect(page).toHaveURL(/\/privacy$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Privacy policy' })).toBeVisible();
+  await expect(page).toHaveTitle(/Privacy Policy/);
+  await page.getByRole('contentinfo').getByRole('link', { name: 'Terms' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Terms of service' })).toBeVisible();
+});

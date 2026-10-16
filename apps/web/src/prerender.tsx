@@ -8,6 +8,7 @@ import { Layout } from './components/Layout';
 import { AuthContext } from './lib/auth';
 import { ComputerPage } from './pages/ComputerPage';
 import { LandingPage } from './pages/LandingPage';
+import { PrivacyPage, TermsPage } from './pages/LegalPages';
 import { RulesPage } from './pages/RulesPage';
 
 export { APP_META, PAGES, SITE_URL, headTags } from './seo';
@@ -16,6 +17,8 @@ const PAGE_COMPONENTS: Record<string, () => ReactNode> = {
   '/': () => <LandingPage />,
   '/rules': () => <RulesPage />,
   '/play/computer': () => <ComputerPage />,
+  '/privacy': () => <PrivacyPage />,
+  '/terms': () => <TermsPage />,
 };
 
 const guest = {
