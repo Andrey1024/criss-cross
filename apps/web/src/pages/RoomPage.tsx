@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
 import { Events, otherMark, type ChatMessageDto, type EndReason, type Mark, type PublicUser, type RoomState } from '@cc/shared';
 import { Board, MarkIcon } from '../components/Board';
@@ -38,6 +38,15 @@ export function RoomPage({ roomId, me }: { roomId: string; me: PublicUser }) {
   });
   useEffect(() => () => void getSocket().emit(Events.RoomLeave), []);
 
+  // The server sends the time left rather than a timestamp, so clock differences don't matter.
+  const turnDeadline = useMemo(() => (state?.timer.msLeft == null ? null : Date.now() + state.timer.msLeft), [state]);
+  const now = useNow(turnDeadline !== null, 250);
+  // `now` can lag the moment the state arrived by one tick, so never show more than the server sent.
+  const secondsLeft =
+    turnDeadline === null
+      ? null
+      : Math.max(0, Math.min(Math.ceil(state!.timer.msLeft! / 1000), Math.ceil((turnDeadline - now) / 1000)));
+
   if (closed || joinError) {
     return (
       <Card className="mx-auto max-w-md text-center">
@@ -69,12 +78,13 @@ export function RoomPage({ roomId, me }: { roomId: string; me: PublicUser }) {
             <h1 className="flex flex-wrap items-center gap-2 text-lg font-semibold">
               {state.name}
               {state.unrated && <Badge>Unrated</Badge>}
+              {state.status === 'PLAYING' && !state.timer.enabled && <Badge>No timer</Badge>}
             </h1>
             <p className="text-xs text-slate-500">
               {state.moveCount} moves{state.spectators > 0 && ` · ${state.spectators} watching`}
             </p>
           </div>
-          <StatusLine state={state} myMark={myMark} />
+          <StatusLine state={state} myMark={myMark} secondsLeft={secondsLeft} />
         </div>
         <div className="overflow-x-auto">
           <Board
@@ -86,14 +96,15 @@ export function RoomPage({ roomId, me }: { roomId: string; me: PublicUser }) {
           />
         </div>
         {moveError && <p className="text-sm text-red-600">{moveError}</p>}
+        {state.status === 'PLAYING' && state.timer.proposal && <TimerProposal state={state} myMark={myMark} />}
         {state.status === 'FINISHED' && state.players.O && <Rematch state={state} myMark={myMark} />}
       </div>
 
       <div className="space-y-4">
         <Card title="Players">
           <div className="space-y-2">
-            <PlayerRow mark="X" user={state.players.X} state={state} isMe={myMark === 'X'} />
-            <PlayerRow mark="O" user={state.players.O} state={state} isMe={myMark === 'O'} />
+            <PlayerRow mark="X" user={state.players.X} state={state} isMe={myMark === 'X'} secondsLeft={secondsLeft} />
+            <PlayerRow mark="O" user={state.players.O} state={state} isMe={myMark === 'O'} secondsLeft={secondsLeft} />
           </div>
           {state.status === 'FINISHED' && state.rated === false && !state.unrated && (
             <p className="mt-2 text-xs text-slate-500">This game was not rated.</p>
@@ -108,6 +119,11 @@ export function RoomPage({ roomId, me }: { roomId: string; me: PublicUser }) {
               <ConfirmButton size="sm" prompt="Resign this game?" confirmLabel="Resign" onConfirm={() => emitAck(Events.GameResign, { roomId })}>
                 Resign
               </ConfirmButton>
+            )}
+            {state.status === 'PLAYING' && myMark && !state.timer.proposal && (
+              <Button size="sm" variant="secondary" onClick={() => emitAck(Events.GameTimer, { roomId, agree: true })}>
+                {state.timer.enabled ? 'Turn off timer' : 'Turn on timer'}
+              </Button>
             )}
             {state.status === 'WAITING' && <CopyInvite />}
             {me.guest ? (
@@ -207,12 +223,60 @@ function Rematch({ state, myMark }: { state: RoomState; myMark: Mark | null }) {
   );
 }
 
-function StatusLine({ state, myMark }: { state: RoomState; myMark: Mark | null }) {
+/** Asks the opponent to switch the move timer on or off; spectators just see the request. */
+function TimerProposal({ state, myMark }: { state: RoomState; myMark: Mark | null }) {
+  const [busy, setBusy] = useState(false);
+  const proposer = state.timer.proposal!;
+  const what = state.timer.enabled ? 'turn off the move timer' : 'turn the move timer back on';
+
+  async function vote(agree: boolean) {
+    setBusy(true);
+    await emitAck(Events.GameTimer, { roomId: state.id, agree });
+    setBusy(false);
+  }
+
+  if (!myMark) return <p className="text-sm text-slate-600">{state.players[proposer]?.name} wants to {what}.</p>;
+  const mine = proposer === myMark;
+  const opponent = state.players[otherMark(myMark)]!;
+  return (
+    <div
+      role="status"
+      className={`flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border px-4 py-3 ${
+        mine ? 'border-slate-200 bg-white' : 'border-emerald-300 bg-emerald-50'
+      }`}
+    >
+      <p className="min-w-0 flex-1 text-sm font-medium text-slate-900">
+        {mine ? `Waiting for ${opponent.name} to agree…` : `${opponent.name} wants to ${what}.`}
+      </p>
+      {mine ? (
+        <Button size="sm" variant="secondary" disabled={busy} onClick={() => vote(false)}>
+          Cancel
+        </Button>
+      ) : (
+        <span className="flex gap-2">
+          <Button size="sm" variant="secondary" disabled={busy} onClick={() => vote(false)}>
+            Decline
+          </Button>
+          <Button size="sm" disabled={busy} onClick={() => vote(true)}>
+            Accept
+          </Button>
+        </span>
+      )}
+    </div>
+  );
+}
+
+const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+
+function StatusLine({ state, myMark, secondsLeft }: { state: RoomState; myMark: Mark | null; secondsLeft: number | null }) {
   if (state.status === 'WAITING') return <Badge tone="amber">Waiting for an opponent…</Badge>;
   if (state.status === 'PLAYING') {
-    const turnName = state.players[state.turn]?.name;
-    if (!myMark) return <Badge tone="blue">{turnName}'s turn</Badge>;
-    return state.turn === myMark ? <Badge tone="green">Your turn</Badge> : <Badge>Opponent's turn</Badge>;
+    const time = secondsLeft === null ? '' : ` · ${clock(secondsLeft)}`;
+    if (!myMark) return <Badge tone="blue">{state.players[state.turn]?.name}'s turn{time}</Badge>;
+    if (state.turn !== myMark) return <Badge>Opponent's turn{time}</Badge>;
+    // Your own clock warns as it runs low.
+    const tone = secondsLeft === null || secondsLeft > 10 ? 'green' : secondsLeft > 5 ? 'amber' : 'red';
+    return <Badge tone={tone}>Your turn{time}</Badge>;
   }
   const how = state.endReason ? END_REASON_LABEL[state.endReason] : '';
   if (!state.winner) return <Badge>Game over — {how}</Badge>;
@@ -226,7 +290,19 @@ function StatusLine({ state, myMark }: { state: RoomState; myMark: Mark | null }
   return <Badge tone="blue">{state.players[state.winner]?.name} won — {how}</Badge>;
 }
 
-function PlayerRow({ mark, user, state, isMe }: { mark: Mark; user: PublicUser | null; state: RoomState; isMe: boolean }) {
+function PlayerRow({
+  mark,
+  user,
+  state,
+  isMe,
+  secondsLeft,
+}: {
+  mark: Mark;
+  user: PublicUser | null;
+  state: RoomState;
+  isMe: boolean;
+  secondsLeft: number | null;
+}) {
   const deadline = state.awayDeadline[mark];
   const now = useNow(deadline !== null);
   const active = state.status === 'PLAYING' && state.turn === mark;
@@ -257,6 +333,7 @@ function PlayerRow({ mark, user, state, isMe }: { mark: Mark; user: PublicUser |
               ) : (
                 'Offline'
               )}
+              {active && secondsLeft !== null && ` · ${clock(secondsLeft)} left`}
             </p>
           </div>
           {won && <Badge tone="green">Winner</Badge>}

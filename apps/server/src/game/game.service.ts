@@ -9,6 +9,7 @@ import {
   findWinLine,
   isBoardFull,
   isInside,
+  MOVE_TIME_SECONDS,
   otherMark,
   type BanInfo,
   type Board,
@@ -63,6 +64,11 @@ interface LiveRoom {
   rated: boolean | null;
   ratingChange: RatingChange | null;
   rematch: Record<Mark, boolean>;
+  /** Move timer: on at the start of every game; switching it needs both players to agree. */
+  timerOn: boolean;
+  turnDeadline: number | null;
+  turnTimer: NodeJS.Timeout | null;
+  timerProposal: Mark | null;
   /** userId -> ids of that user's sockets currently in the room. */
   presence: Map<string, Set<string>>;
   /** Grace timers for absent players (or an absent host of a waiting room). */
@@ -83,6 +89,7 @@ export class GameService implements OnModuleInit {
   private readonly userSockets = new Map<string, Set<Socket>>();
   private server: Server | null = null;
   awayGraceMs = AWAY_GRACE_SECONDS * 1000;
+  moveTimeMs = MOVE_TIME_SECONDS * 1000;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -172,6 +179,10 @@ export class GameService implements OnModuleInit {
       rated: null,
       ratingChange: null,
       rematch: { X: false, O: false },
+      timerOn: true,
+      turnDeadline: null,
+      turnTimer: null,
+      timerProposal: null,
       presence: new Map(),
       away: new Map(),
       cleanupTimer: null,
@@ -251,6 +262,7 @@ export class GameService implements OnModuleInit {
       this.endGame(room, null, 'DRAW', 'draw');
     } else {
       room.turn = otherMark(mark);
+      this.startTurnTimer(room);
       this.broadcastRoom(room);
     }
     return null;
@@ -283,6 +295,29 @@ export class GameService implements OnModuleInit {
       this.clearCleanup(room);
       room.players = { X: room.players.O, O: room.players.X };
       this.startGame(room);
+    }
+    this.broadcastRoom(room);
+    return null;
+  }
+
+  /**
+   * Proposes, accepts, withdraws or declines switching the move timer on/off for the rest of the
+   * current game. It switches only once both players agree.
+   */
+  timerVote(user: PublicUser, roomId: string, agree: boolean): GameError | null {
+    const room = this.rooms.get(roomId);
+    if (!room) return 'ROOM_NOT_FOUND';
+    if (room.status !== 'PLAYING') return 'GAME_NOT_ACTIVE';
+    const mark = this.markOf(room, user.id);
+    if (!mark) return 'NOT_A_PLAYER';
+
+    if (!agree) room.timerProposal = null;
+    else if (!room.timerProposal) room.timerProposal = mark;
+    else if (room.timerProposal !== mark) {
+      room.timerProposal = null;
+      room.timerOn = !room.timerOn;
+      // Switched back on, the side to move gets a fresh full turn.
+      this.startTurnTimer(room);
     }
     this.broadcastRoom(room);
     return null;
@@ -350,6 +385,9 @@ export class GameService implements OnModuleInit {
     room.rated = null;
     room.ratingChange = null;
     room.rematch = { X: false, O: false };
+    room.timerOn = true;
+    room.timerProposal = null;
+    this.startTurnTimer(room);
     const xPlayerId = room.players.X.id;
     this.persist(room, () =>
       this.prisma.game.create({ data: { id: gameId, roomId: room.id, xPlayerId, oPlayerId: O.id } }),
@@ -366,6 +404,8 @@ export class GameService implements OnModuleInit {
     room.winner = winner;
     room.result = result;
     room.endReason = reason;
+    room.timerProposal = null;
+    this.clearTurnTimer(room);
     for (const userId of [...room.away.keys()]) this.clearAway(room, userId);
 
     const gameId = room.gameId;
@@ -393,6 +433,26 @@ export class GameService implements OnModuleInit {
     this.broadcastLobby();
     if (room.presence.size === 0) this.dispose(room);
     else room.cleanupTimer = setTimeout(() => this.closeRoom(room.id, 'closed'), FINISHED_ROOM_TTL_MS);
+  }
+
+  /** (Re)starts the clock for the side to move, if the timer is on and a game is running. */
+  private startTurnTimer(room: LiveRoom) {
+    this.clearTurnTimer(room);
+    if (room.status !== 'PLAYING' || !room.timerOn) return;
+    const { gameId } = room;
+    const moveCount = room.moves.length;
+    room.turnDeadline = Date.now() + this.moveTimeMs;
+    room.turnTimer = setTimeout(() => {
+      if (this.rooms.get(room.id) !== room || room.gameId !== gameId || room.moves.length !== moveCount) return;
+      this.endGame(room, otherMark(room.turn), 'TIMEOUT', 'timeout');
+    }, this.moveTimeMs);
+    room.turnTimer.unref?.();
+  }
+
+  private clearTurnTimer(room: LiveRoom) {
+    if (room.turnTimer) clearTimeout(room.turnTimer);
+    room.turnTimer = null;
+    room.turnDeadline = null;
   }
 
   private scheduleAway(room: LiveRoom, userId: string) {
@@ -426,6 +486,7 @@ export class GameService implements OnModuleInit {
   }
 
   private dispose(room: LiveRoom) {
+    this.clearTurnTimer(room);
     for (const userId of [...room.away.keys()]) this.clearAway(room, userId);
     this.clearCleanup(room);
     this.rooms.delete(room.id);
@@ -483,6 +544,11 @@ export class GameService implements OnModuleInit {
       rated: room.rated,
       ratingChange: room.ratingChange,
       rematch: { ...room.rematch },
+      timer: {
+        enabled: room.timerOn,
+        msLeft: room.turnDeadline === null ? null : Math.max(0, room.turnDeadline - Date.now()),
+        proposal: room.timerProposal,
+      },
       connected: { X: room.presence.has(X.id), O: O ? room.presence.has(O.id) : false },
       awayDeadline: {
         X: room.away.get(X.id)?.deadline ?? null,

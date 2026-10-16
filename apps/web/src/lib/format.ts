@@ -19,6 +19,7 @@ export const RESULT_LABEL: Record<GameResult, string> = {
   DRAW: 'Board full',
   RESIGNED: 'Resigned',
   ABANDONED: 'Abandoned',
+  TIMEOUT: 'Time ran out',
 };
 
 export const END_REASON_LABEL: Record<EndReason, string> = {
@@ -28,6 +29,7 @@ export const END_REASON_LABEL: Record<EndReason, string> = {
   abandoned: 'the opponent left',
   banned: 'the opponent was banned',
   closed: 'the room was closed',
+  timeout: 'time ran out',
 };
 
 const ERROR_LABEL: Record<string, string> = {

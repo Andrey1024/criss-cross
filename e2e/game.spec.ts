@@ -84,3 +84,33 @@ test('players start a rematch in the same room with colours swapped', async ({ b
   await cell(bob, 3, 3).click();
   await expect(alice.getByText('Your turn')).toBeVisible();
 });
+
+test('the move timer counts down and turns off only when both players agree', async ({ browser }) => {
+  const tag = Date.now();
+  const alice = await signIn(browser, `alice-t${tag}@example.com`, 'Alice');
+  const bob = await signIn(browser, `bob-t${tag}@example.com`, 'Bob');
+
+  const roomName = `Timer ${tag}`;
+  await alice.getByLabel('Room name').fill(roomName);
+  await alice.getByRole('button', { name: 'Create room' }).click();
+  await bob.locator('li', { hasText: roomName }).getByRole('button', { name: 'Join' }).click();
+  await expect(alice.getByText(/^Your turn · 0:[23]\d$/)).toBeVisible();
+  await expect(bob.getByText(/^Opponent's turn · 0:[23]\d$/)).toBeVisible();
+
+  await alice.getByRole('button', { name: 'Turn off timer' }).click();
+  await expect(alice.getByText('Waiting for Bob to agree…')).toBeVisible();
+  await expect(bob.getByText('Alice wants to turn off the move timer.')).toBeVisible();
+  await bob.getByRole('button', { name: 'Accept' }).click();
+  await expect(alice.getByText('No timer')).toBeVisible();
+  await expect(bob.getByText('No timer')).toBeVisible();
+  await expect(alice.getByText('Your turn', { exact: true })).toBeVisible();
+
+  // Turning it back on needs agreement too; a decline leaves it off.
+  await bob.getByRole('button', { name: 'Turn on timer' }).click();
+  await expect(alice.getByText('Bob wants to turn the move timer back on.')).toBeVisible();
+  await alice.getByRole('button', { name: 'Decline' }).click();
+  await expect(bob.getByRole('button', { name: 'Turn on timer' })).toBeVisible();
+  await expect(alice.getByText('No timer')).toBeVisible();
+  await cell(alice, 7, 7).click();
+  await expect(bob.getByText('Your turn', { exact: true })).toBeVisible();
+});

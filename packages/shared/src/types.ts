@@ -2,9 +2,9 @@ import type { Board, Mark, Point } from './game';
 
 export type Role = 'USER' | 'ADMIN';
 export type RoomStatus = 'WAITING' | 'PLAYING' | 'FINISHED' | 'CLOSED';
-export type GameResult = 'WIN' | 'DRAW' | 'RESIGNED' | 'ABANDONED';
+export type GameResult = 'WIN' | 'DRAW' | 'RESIGNED' | 'ABANDONED' | 'TIMEOUT';
 /** Why a game or room ended, for display. */
-export type EndReason = 'five' | 'draw' | 'resigned' | 'abandoned' | 'banned' | 'closed';
+export type EndReason = 'five' | 'draw' | 'resigned' | 'abandoned' | 'banned' | 'closed' | 'timeout';
 
 export interface PublicUser {
   id: string;
@@ -93,6 +93,11 @@ export interface RoomState {
   /** Whether the finished game counted for rating; null while undecided or still playing. */
   rated: boolean | null;
   ratingChange: { X: number; O: number } | null;
+  /**
+   * Move timer. msLeft is the time left for the side to move when this state was sent (null when
+   * the timer is off or no game is running); proposal is the player asking to switch it on/off.
+   */
+  timer: { enabled: boolean; msLeft: number | null; proposal: Mark | null };
   /** Which players want a rematch after a finished game; both → a new game with colours swapped. */
   rematch: { X: boolean; O: boolean };
   /** Whether each seated player currently has the room open. */

@@ -6,7 +6,8 @@ const alice: PublicUser = { id: 'alice', name: 'Alice', avatarUrl: null };
 const bob: PublicUser = { id: 'bob', name: 'Bob', avatarUrl: null };
 const carol: PublicUser = { id: 'carol', name: 'Carol', avatarUrl: null };
 
-function setup() {
+/** Move time is long by default so tests about other timers aren't cut short by the move clock. */
+function setup({ moveTimeMs = 10 * 60_000 } = {}) {
   const db: Array<{ model: string; op: string; args: any }> = [];
   let roomSeq = 0;
   // Records every Prisma call; room.create returns a row like the real client.
@@ -29,12 +30,13 @@ function setup() {
   };
   const ratings = { view: () => ({ rating: 1500, provisional: true }), rateGame: vi.fn(async () => null) };
   const game = new GameService(prisma, ratings as any);
+  game.moveTimeMs = moveTimeMs;
   game.attachServer(server as any);
   return { game, db, emitted, ratings };
 }
 
-async function startedGame() {
-  const ctx = setup();
+async function startedGame(opts?: { moveTimeMs?: number }) {
+  const ctx = setup(opts);
   const room = await ctx.game.createRoom(alice, 'Test');
   ctx.game.join(alice, room.id, 'a1');
   ctx.game.join(bob, room.id, 'b1');
@@ -210,6 +212,68 @@ describe('GameService', () => {
     await game.settled();
     expect(ratings.rateGame).not.toHaveBeenCalled();
     expect(db.find((c) => c.model === 'room' && c.op === 'create')?.args.data.unrated).toBe(true);
+  });
+
+  it('the side to move loses on time', async () => {
+    const { game, roomId, db } = await startedGame({ moveTimeMs: 30_000 });
+    expect(game.getState(roomId)!.timer).toEqual({ enabled: true, msLeft: 30_000, proposal: null });
+    game.move(alice, roomId, 7, 7);
+    vi.advanceTimersByTime(29_000);
+    expect(game.getState(roomId)!.status).toBe('PLAYING');
+    vi.advanceTimersByTime(1_000);
+
+    const state = game.getState(roomId)!;
+    expect(state).toMatchObject({ status: 'FINISHED', winner: 'X', result: 'TIMEOUT', endReason: 'timeout' });
+    expect(state.timer.msLeft).toBeNull();
+    await game.settled();
+    expect(db.find((c) => c.model === 'game' && c.op === 'update')?.args.data).toMatchObject({ winnerId: 'alice', result: 'TIMEOUT' });
+  });
+
+  it('every move restarts the clock', async () => {
+    const { game, roomId } = await startedGame({ moveTimeMs: 30_000 });
+    for (let i = 0; i < 6; i++) {
+      vi.advanceTimersByTime(20_000);
+      expect(game.move(i % 2 ? bob : alice, roomId, i, 0)).toBeNull();
+    }
+    expect(game.getState(roomId)!.status).toBe('PLAYING');
+    expect(game.getState(roomId)!.timer.msLeft).toBe(30_000);
+  });
+
+  it('turns the timer off and on only when both players agree', async () => {
+    const { game, roomId } = await startedGame({ moveTimeMs: 30_000 });
+    game.join(carol, roomId, 'c1');
+    expect(game.timerVote(carol, roomId, true)).toBe('NOT_A_PLAYER');
+
+    expect(game.timerVote(alice, roomId, true)).toBeNull();
+    expect(game.getState(roomId)!.timer).toMatchObject({ enabled: true, proposal: 'X' });
+    game.timerVote(alice, roomId, true);
+    expect(game.getState(roomId)!.timer.enabled).toBe(true);
+    expect(game.timerVote(bob, roomId, false)).toBeNull();
+    expect(game.getState(roomId)!.timer).toMatchObject({ enabled: true, proposal: null });
+
+    game.timerVote(alice, roomId, true);
+    game.timerVote(bob, roomId, true);
+    expect(game.getState(roomId)!.timer).toEqual({ enabled: false, msLeft: null, proposal: null });
+    vi.advanceTimersByTime(5 * 60_000);
+    expect(game.getState(roomId)!.status).toBe('PLAYING');
+
+    // Back on: the side to move gets a fresh full turn.
+    game.timerVote(bob, roomId, true);
+    game.timerVote(alice, roomId, true);
+    expect(game.getState(roomId)!.timer).toEqual({ enabled: true, msLeft: 30_000, proposal: null });
+    vi.advanceTimersByTime(30_000);
+    expect(game.getState(roomId)!.result).toBe('TIMEOUT');
+    expect(game.timerVote(alice, roomId, true)).toBe('GAME_NOT_ACTIVE');
+  });
+
+  it('a rematch starts with the timer on again', async () => {
+    const { game, roomId } = await startedGame({ moveTimeMs: 30_000 });
+    game.timerVote(alice, roomId, true);
+    game.timerVote(bob, roomId, true);
+    game.resign(bob, roomId);
+    game.rematch(alice, roomId, true);
+    game.rematch(bob, roomId, true);
+    expect(game.getState(roomId)!.timer).toEqual({ enabled: true, msLeft: 30_000, proposal: null });
   });
 
   it('kickUser forfeits running games, closes hosted waiting rooms and disconnects sockets', async () => {

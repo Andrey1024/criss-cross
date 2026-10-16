@@ -16,6 +16,7 @@ export const Events = {
   GameMove: 'game:move',
   GameResign: 'game:resign',
   GameRematch: 'game:rematch',
+  GameTimer: 'game:timer',
   ChatSend: 'chat:send',
   ChatHistory: 'chat:history',
   ChatMessage: 'chat:message',
@@ -23,6 +24,8 @@ export const Events = {
   AuthBanned: 'auth:banned',
 } as const;
 
+/** Seconds each move may take while the move timer is on; running out loses the game. */
+export const MOVE_TIME_SECONDS = 30;
 /** Seconds an absent player has to come back before forfeiting. */
 export const AWAY_GRACE_SECONDS = 30;
 export const AUTH_COOKIE = 'cc_token';

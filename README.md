@@ -69,6 +69,7 @@ Each ban is stored as its own row (`Ban` table), so the admin panel can show the
 ## Game rules and timeouts
 
 - X always moves first; in the first game of a room the host plays X. Five **or more** in a row wins.
+- Each move has a **30-second limit**. A player who runs out of time loses (`TIMEOUT`); the game is rated like any other once at least 2 moves were played. Either player can propose turning the timer off, and it switches off for the rest of the game once the opponent accepts. Turning it back on needs agreement too, and a rematch always starts with the timer on.
 - After a game, either player can offer a **rematch**. When the other accepts, a new rated game starts in the same room with colours swapped. An offer is withdrawn if its player leaves the room.
 - The first person to join a waiting room becomes O. Anyone who joins after that watches the game and can use the chat.
 - A player who disconnects has **30 seconds** to come back before they forfeit. A waiting room closes if its host stays away for 30 seconds.

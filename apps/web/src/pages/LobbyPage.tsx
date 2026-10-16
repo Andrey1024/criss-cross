@@ -93,7 +93,7 @@ export function LobbyPage() {
               </span>
             </label>
             <p className="text-xs text-slate-500">
-              You play <MarkIcon mark="X" className="inline h-3.5 w-3.5 align-[-2px]" /> and move first. The game starts when someone joins.
+              You play <MarkIcon mark="X" className="inline h-3.5 w-3.5 align-[-2px]" /> and move first. The game starts when someone joins. Each move has a 30-second limit, which you can both agree to turn off.
             </p>
             {error && <ErrorNote>{error}</ErrorNote>}
             <Button type="submit" className="w-full" disabled={creating || !name.trim()}>

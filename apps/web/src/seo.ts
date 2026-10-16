@@ -24,7 +24,11 @@ export const FAQ: FaqItem[] = [
   },
   {
     q: 'Do I need an account?',
-    a: 'No account is needed to play against the computer. To play other people, keep a rating and appear on the leaderboard, sign in with Google.',
+    a: 'No account is needed to play against the computer, or to join a friend’s unrated room from an invite link. To find opponents in the lobby, keep a rating and appear on the leaderboard, sign in with Google.',
+  },
+  {
+    q: 'Is there a time limit?',
+    a: 'Yes. In games against people each move has a 30-second limit, and a player who runs out of time loses. If both players agree, the timer can be turned off for the rest of the game.',
   },
   {
     q: 'How does the rating work?',

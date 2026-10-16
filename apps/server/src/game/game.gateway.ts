@@ -17,6 +17,7 @@ import {
   Events,
   moveSchema,
   rematchSchema,
+  timerVoteSchema,
   roomRefSchema,
   type Ack,
   type PublicUser,
@@ -140,6 +141,14 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     const parsed = rematchSchema.safeParse(body);
     if (!parsed.success) return fail('INVALID_PAYLOAD');
     const error = this.game.rematch(socket.data.user, parsed.data.roomId, parsed.data.offer);
+    return error ? fail(error) : { ok: true, data: undefined };
+  }
+
+  @SubscribeMessage(Events.GameTimer)
+  gameTimer(@ConnectedSocket() socket: AppSocket, @MessageBody() body: unknown): Ack {
+    const parsed = timerVoteSchema.safeParse(body);
+    if (!parsed.success) return fail('INVALID_PAYLOAD');
+    const error = this.game.timerVote(socket.data.user, parsed.data.roomId, parsed.data.agree);
     return error ? fail(error) : { ok: true, data: undefined };
   }
 

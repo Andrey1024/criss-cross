@@ -23,6 +23,8 @@ export const guestJoinSchema = z.object({
 export const roomRefSchema = z.object({ roomId: id });
 /** offer: true to offer (or accept) a rematch, false to withdraw the offer. */
 export const rematchSchema = z.object({ roomId: id, offer: z.boolean() });
+/** agree: true proposes (or accepts) switching the move timer, false withdraws or declines. */
+export const timerVoteSchema = z.object({ roomId: id, agree: z.boolean() });
 export const moveSchema = z.object({ roomId: id, x: coord, y: coord });
 export const chatSendSchema = z.object({
   roomId: id,
