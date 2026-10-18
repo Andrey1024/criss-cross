@@ -39,7 +39,7 @@ export function LobbyPage() {
   const playing = rooms?.filter((r) => r.status === 'PLAYING') ?? [];
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_20rem]">
       <div className="space-y-6">
         <Card title={<>Open rooms {rooms && <span className="font-normal text-slate-400">· {waiting.length}</span>}</>}>
           {!rooms ? (

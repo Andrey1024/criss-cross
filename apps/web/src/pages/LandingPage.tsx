@@ -57,7 +57,7 @@ export function LandingPage() {
   usePageTitle(PAGES[0].title);
   return (
     <div className="space-y-14 py-2">
-      <section className="grid items-center gap-10 lg:grid-cols-[1fr_auto]">
+      <section className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[1fr_auto]">
         <div>
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Play five in a row online</h1>
           <p className="mt-4 max-w-xl text-lg text-slate-600">

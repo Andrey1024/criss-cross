@@ -123,16 +123,19 @@ export function ComputerPage() {
   }
 
   return (
-    <div className="grid items-start gap-6 lg:grid-cols-[auto_minmax(18rem,1fr)]">
+    <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[auto_minmax(18rem,1fr)]">
       <div className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h1 className="text-lg font-semibold">Playing the computer</h1>
-            <p className="text-xs text-slate-500">
-              {LEVEL_INFO[settings.level].label} · {moves.length} moves · not saved to history
+        {/* One line that never wraps, so the board doesn't jump as the status text changes. */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="truncate text-lg font-semibold">Playing the computer</h1>
+            <p className="truncate text-xs text-slate-500">
+              {LEVEL_INFO[settings.level].label} · {moves.length} {moves.length === 1 ? 'move' : 'moves'} · not saved to history
             </p>
           </div>
-          <Status thinking={thinking} winner={winner} draw={draw} myMark={myMark} />
+          <div className="shrink-0">
+            <Status thinking={thinking} winner={winner} draw={draw} myMark={myMark} />
+          </div>
         </div>
         <div className="overflow-x-auto">
           <Board
@@ -246,7 +249,8 @@ function Status({ thinking, winner, draw, myMark }: { thinking: boolean; winner:
     return (
       <Badge tone="amber">
         <span className="mr-1.5 h-2.5 w-2.5 animate-spin rounded-full border-2 border-amber-300 border-t-amber-700" aria-hidden />
-        Computer is thinking…
+        <span className="sm:hidden">Thinking…</span>
+        <span className="hidden sm:inline">Computer is thinking…</span>
       </Badge>
     );
   }

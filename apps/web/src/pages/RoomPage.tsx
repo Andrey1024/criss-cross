@@ -71,20 +71,27 @@ export function RoomPage({ roomId, me }: { roomId: string; me: PublicUser }) {
   }
 
   return (
-    <div className="grid items-start gap-6 lg:grid-cols-[auto_minmax(18rem,1fr)]">
+    <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[auto_minmax(18rem,1fr)]">
       <div className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h1 className="flex flex-wrap items-center gap-2 text-lg font-semibold">
-              {state.name}
-              {state.unrated && <Badge>Unrated</Badge>}
-              {state.status === 'PLAYING' && !state.timer.enabled && <Badge>No timer</Badge>}
+        {/* One line that never wraps, so the board doesn't jump as the status text changes. */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="flex items-center gap-2 text-lg font-semibold">
+              <span className="truncate">{state.name}</span>
+              {state.unrated && <span className="shrink-0"><Badge>Unrated</Badge></span>}
+              {state.status === 'PLAYING' && !state.timer.enabled && <span className="shrink-0"><Badge>No timer</Badge></span>}
             </h1>
-            <p className="text-xs text-slate-500">
-              {state.moveCount} moves{state.spectators > 0 && ` · ${state.spectators} watching`}
+            <p className="truncate text-xs text-slate-500">
+              {state.moveCount} {state.moveCount === 1 ? 'move' : 'moves'}
+              {state.spectators > 0 && ` · ${state.spectators} watching`}
+              {state.status === 'FINISHED' && state.endReason && (
+                <span className="sm:hidden"> · {END_REASON_LABEL[state.endReason]}</span>
+              )}
             </p>
           </div>
-          <StatusLine state={state} myMark={myMark} secondsLeft={secondsLeft} />
+          <div className="shrink-0">
+            <StatusLine state={state} myMark={myMark} secondsLeft={secondsLeft} />
+          </div>
         </div>
         <div className="overflow-x-auto">
           <Board
@@ -272,22 +279,39 @@ function StatusLine({ state, myMark, secondsLeft }: { state: RoomState; myMark: 
   if (state.status === 'WAITING') return <Badge tone="amber">Waiting for an opponent…</Badge>;
   if (state.status === 'PLAYING') {
     const time = secondsLeft === null ? '' : ` · ${clock(secondsLeft)}`;
-    if (!myMark) return <Badge tone="blue">{state.players[state.turn]?.name}'s turn{time}</Badge>;
+    if (!myMark) {
+      return (
+        <Badge tone="blue">
+          <ShortName name={state.players[state.turn]?.name} />
+          's turn{time}
+        </Badge>
+      );
+    }
     if (state.turn !== myMark) return <Badge>Opponent's turn{time}</Badge>;
     // Your own clock warns as it runs low.
     const tone = secondsLeft === null || secondsLeft > 10 ? 'green' : secondsLeft > 5 ? 'amber' : 'red';
     return <Badge tone={tone}>Your turn{time}</Badge>;
   }
-  const how = state.endReason ? END_REASON_LABEL[state.endReason] : '';
-  if (!state.winner) return <Badge>Game over — {how}</Badge>;
+  // On phones the reason is shown under the room name instead, keeping the badge short.
+  const reason = state.endReason && <span className="hidden sm:inline"> — {END_REASON_LABEL[state.endReason]}</span>;
+  if (!state.winner) return <Badge>Game over{reason}</Badge>;
   if (myMark) {
     return state.winner === myMark ? (
-      <Badge tone="green">You won — {how}!</Badge>
+      <Badge tone="green">You won{reason}!</Badge>
     ) : (
-      <Badge tone="red">You lost — {how}</Badge>
+      <Badge tone="red">You lost{reason}</Badge>
     );
   }
-  return <Badge tone="blue">{state.players[state.winner]?.name} won — {how}</Badge>;
+  return (
+    <Badge tone="blue">
+      <ShortName name={state.players[state.winner]?.name} /> won{reason}
+    </Badge>
+  );
+}
+
+/** A player's name cut short, so a long name can't push the status badge off a phone screen. */
+function ShortName({ name }: { name?: string }) {
+  return <span className="max-w-[8rem] truncate">{name}</span>;
 }
 
 function PlayerRow({

@@ -31,3 +31,16 @@ test('phones get a one-row header, a bottom tab bar and an account menu', async 
   await menu.getByRole('menuitem', { name: 'Sign out' }).click();
   await expect(tabs.getByRole('link')).toHaveText(['Home', 'Computer', 'Rules']);
 });
+
+test("the board doesn't move while the computer is thinking", async ({ page }) => {
+  await page.goto('/play/computer');
+  await page.getByRole('button', { name: /^Hard/ }).click();
+  await page.getByRole('button', { name: 'Start' }).click();
+  const top = async () => (await page.locator('[data-x="0"][data-y="0"]').boundingBox())!.y;
+  const idle = await top();
+  await page.locator('[data-x="7"][data-y="7"]').click();
+  await expect(page.getByText('Thinking…', { exact: true })).toBeVisible();
+  expect(await top()).toBe(idle);
+  await expect(page.getByText('Your turn')).toBeVisible({ timeout: 10_000 });
+  expect(await top()).toBe(idle);
+});

@@ -37,7 +37,7 @@ function Replay({ game }: { game: GameDetail }) {
   }, [game, step, total]);
 
   return (
-    <div className="grid items-start gap-6 lg:grid-cols-[auto_minmax(16rem,1fr)]">
+    <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[auto_minmax(16rem,1fr)]">
       <div className="space-y-3">
         <div className="overflow-x-auto">
           <Board board={board} lastMove={last} winLine={winLine} />
