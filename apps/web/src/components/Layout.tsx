@@ -3,8 +3,9 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import type { Me } from '@cc/shared';
 import { useAuth } from '../lib/auth';
 import { useSocketConnected } from '../lib/hooks';
+import { setTheme, useTheme } from '../lib/theme';
 import { MarkIcon } from './Board';
-import { BookIcon, ComputerIcon, HistoryIcon, HomeIcon, TrophyIcon } from './icons';
+import { BookIcon, ComputerIcon, HistoryIcon, HomeIcon, MoonIcon, SunIcon, TrophyIcon } from './icons';
 import { Avatar, Button, Spinner } from './ui';
 
 const link = ({ isActive }: { isActive: boolean }) =>
@@ -41,7 +42,7 @@ export function Layout() {
     <div className="flex min-h-screen flex-col pb-[calc(3.75rem+env(safe-area-inset-bottom))] sm:pb-0">
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="mx-auto flex h-13 max-w-6xl items-center gap-4 px-4">
-          <NavLink to="/" className="flex shrink-0 items-center gap-1 text-base font-bold tracking-tight">
+          <NavLink to="/" className="flex shrink-0 items-center gap-1 text-base font-semibold tracking-tight text-slate-700">
             <MarkIcon mark="X" className="h-5 w-5" />
             <MarkIcon mark="O" className="-ml-1 h-5 w-5" />
             Five in a Row
@@ -120,7 +121,8 @@ function GuestNav() {
           Rules
         </NavLink>
       </nav>
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-1 sm:gap-2">
+        <ThemeToggle />
         <Link
           to="/login"
           className="inline-flex h-9 items-center rounded-md bg-slate-900 px-3.5 text-sm font-medium text-white hover:bg-slate-700"
@@ -158,6 +160,7 @@ function MemberNav({ user }: { user: Me }) {
         )}
       </nav>
       <div className="ml-auto hidden items-center gap-3 sm:flex">
+        <ThemeToggle />
         {!connected && <span className="text-xs text-amber-700">Reconnecting…</span>}
         <span className="flex items-center gap-2 text-sm text-slate-700">
           <Avatar user={user} size={26} />
@@ -167,10 +170,29 @@ function MemberNav({ user }: { user: Me }) {
           Sign out
         </Button>
       </div>
-      <div className="ml-auto sm:hidden">
+      <div className="ml-auto flex items-center gap-1 sm:hidden">
+        <ThemeToggle />
         <AccountMenu user={user} connected={connected} onLogout={logout} />
       </div>
     </>
+  );
+}
+
+/** Sun/moon button. The icon is chosen by CSS, so pre-rendered pages show the right one at once. */
+function ThemeToggle() {
+  const dark = useTheme() === 'dark';
+  return (
+    <button
+      type="button"
+      onClick={() => setTheme(dark ? 'light' : 'dark')}
+      aria-label="Dark theme"
+      aria-pressed={dark}
+      title={dark ? 'Switch to light theme' : 'Switch to dark theme'}
+      className="flex h-11 w-11 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-900 sm:h-9 sm:w-9"
+    >
+      <MoonIcon className="h-5 w-5 dark:hidden" />
+      <SunIcon className="hidden h-5 w-5 dark:block" />
+    </button>
   );
 }
 

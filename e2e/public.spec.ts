@@ -42,3 +42,23 @@ test('privacy policy and terms are public and linked from the footer', async ({ 
   await page.getByRole('contentinfo').getByRole('link', { name: 'Terms' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Terms of service' })).toBeVisible();
 });
+
+test('the theme follows the system and the switch remembers a choice', async ({ browser }) => {
+  const page = await (await browser.newContext({ colorScheme: 'dark' })).newPage();
+  await page.goto('/');
+  const html = page.locator('html');
+  await expect(html).toHaveClass(/dark/);
+
+  const toggle = page.getByRole('button', { name: 'Dark theme' });
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+  await toggle.click();
+  await expect(html).not.toHaveClass(/dark/);
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#ffffff');
+
+  // The explicit choice wins over the system setting, also on pre-rendered pages.
+  await page.goto('/rules');
+  await expect(html).not.toHaveClass(/dark/);
+  await page.getByRole('button', { name: 'Dark theme' }).click();
+  await page.reload();
+  await expect(html).toHaveClass(/dark/);
+});

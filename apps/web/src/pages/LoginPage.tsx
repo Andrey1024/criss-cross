@@ -5,9 +5,11 @@ import { MarkIcon } from '../components/Board';
 import { Button, ErrorNote, inputClass } from '../components/ui';
 import { ApiError } from '../lib/api';
 import { useAuth } from '../lib/auth';
+import { useTheme } from '../lib/theme';
 
 export function LoginPage() {
   const { config, loginWithGoogle, devLogin } = useAuth();
+  const theme = useTheme();
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
@@ -40,9 +42,13 @@ export function LoginPage() {
         {error && <div className="mb-4"><ErrorNote>{error}</ErrorNote></div>}
 
         {config?.googleClientId ? (
-          <div className="flex justify-center">
+          // Google's button is an iframe with a light colour scheme. Under the dark theme the
+          // browser would paint an opaque white box behind it unless the schemes match.
+          <div className="flex justify-center [color-scheme:light]">
             <GoogleOAuthProvider clientId={config.googleClientId}>
               <GoogleLogin
+                key={theme}
+                theme={theme === 'dark' ? 'filled_black' : 'outline'}
                 onSuccess={(r) => r.credential && handle(loginWithGoogle(r.credential))}
                 onError={() => setError('Google sign-in failed')}
               />

@@ -1,5 +1,53 @@
 @import "tailwindcss";
 
+/* `dark:` utilities follow the theme class on <html>, set by the switcher (see lib/theme.ts). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Dark theme: the app uses one small palette (white, slate and four accents), so instead of a
+ * dark: variant on every class the palette itself is remapped. Surfaces darken, text lightens,
+ * and accent shades flip so that e.g. text-white on bg-red-600 stays readable.
+ */
+.dark {
+  color-scheme: dark;
+  --color-white: #151e2e;
+  --color-slate-50: #0b1220;
+  --color-slate-100: #1e293b;
+  --color-slate-200: #273449;
+  --color-slate-300: #364459;
+  --color-slate-400: #64748b;
+  --color-slate-500: #94a3b8;
+  --color-slate-600: #a9b5c7;
+  --color-slate-700: #cbd5e1;
+  --color-slate-800: #e2e8f0;
+  --color-slate-900: #f1f5f9;
+  --color-emerald-50: #0d2621;
+  --color-emerald-100: #113a2f;
+  --color-emerald-300: #1f6f55;
+  --color-emerald-700: #6ee7b7;
+  --color-emerald-800: #a7f3d0;
+  --color-red-50: #2b1518;
+  --color-red-100: #3f1b1f;
+  --color-red-200: #5b2328;
+  --color-red-300: #7a2a2f;
+  --color-red-500: #f87171;
+  --color-red-600: #ef4444;
+  --color-red-700: #fca5a5;
+  --color-red-800: #fecaca;
+  --color-amber-50: #2a2111;
+  --color-amber-100: #3b2d12;
+  --color-amber-300: #7c5a17;
+  --color-amber-700: #fcd34d;
+  --color-amber-800: #fde68a;
+  --color-blue-50: #0f1d36;
+  --color-blue-100: #162a4f;
+  --color-blue-200: #1e3a6e;
+  --color-blue-600: #60a5fa;
+  --color-blue-700: #93c5fd;
+  --color-blue-800: #bfdbfe;
+  --color-blue-900: #dbeafe;
+}
+
 @layer base {
   button:not(:disabled),
   [role="button"]:not(:disabled) {

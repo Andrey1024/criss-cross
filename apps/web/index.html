@@ -10,6 +10,14 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <script>
+      // Apply the saved theme (or the system one) before the first paint, so there's no flash.
+      try {
+        var saved = localStorage.getItem('theme');
+        if (saved === 'dark' || (saved !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark');
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#151e2e');
+        }
+      } catch (e) {}
       // Signed-in visitors skip the pre-rendered public page while the app loads.
       if (document.cookie.split('; ').some((c) => c.indexOf('cc_session=') === 0)) document.documentElement.classList.add('has-session');
     </script>
