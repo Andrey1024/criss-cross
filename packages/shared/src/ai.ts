@@ -118,8 +118,12 @@ export function chooseMove(board: Board, mark: Mark, level: AiLevel, opts: AiOpt
   if (useVcf) {
     e.deadline = start + budget * 0.25;
     try {
-      const win = e.vcf(side, VCF_ROOT_DEPTH);
-      if (win >= 0) return done(win, 0, WIN);
+      // Deepen one four at a time, so the shortest win is played (an open four rather than a
+      // long chain) and a deep search that runs out of time can't hide a short win.
+      for (let d = 1; d <= VCF_ROOT_DEPTH; d++) {
+        const win = e.vcf(side, d);
+        if (win >= 0) return done(win, 0, WIN);
+      }
     } catch (err) {
       if (err !== TIMEOUT) throw err;
       e.load(board);
@@ -642,7 +646,9 @@ class Engine {
 
   /**
    * VCF: can `side` (to move) force five using only moves that make a four, each leaving the
-   * opponent a single forced reply? Returns the first move of such a win, or -1.
+   * opponent a single forced reply? Returns the first move of such a win, or -1. The search is
+   * depth-first, so the win found isn't necessarily the shortest; callers that need the shortest
+   * deepen one level at a time.
    */
   vcf(side: number, depth: number, level = 0): number {
     if ((++this.nodes & 1023) === 0 && now() > this.deadline) throw TIMEOUT;
@@ -682,7 +688,9 @@ class Engine {
     try {
       for (const c of candidates) {
         this.play(c, side);
-        const refuted = this.vcf(3 - side, VCF_DEFENSE_DEPTH) >= 0;
+        // Shallow first: a short refutation is found even if the deep check would time out.
+        let refuted = false;
+        for (let d = 1; d <= VCF_DEFENSE_DEPTH && !refuted; d++) refuted = this.vcf(3 - side, d) >= 0;
         this.undo(c, side);
         if (!refuted) return c;
       }

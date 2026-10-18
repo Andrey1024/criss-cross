@@ -39,6 +39,18 @@ function vcfPosition(): Board {
   return b;
 }
 
+/**
+ * A crowded position from a simulated game: O can make an open four at (4,7) or (8,7), but also
+ * has longer chains of fours. Hard used to start a long chain instead of the open four.
+ */
+function openFourAmongChains(): Board {
+  const b = createBoard();
+  place(b, 'O', [[5, 5], [5, 6], [6, 6], [5, 7], [6, 7], [7, 7], [7, 8], [5, 9], [6, 12], [2, 13]]);
+  place(b, 'X', [[4, 4], [4, 5], [7, 5], [5, 8], [6, 8], [6, 9], [5, 10], [6, 10], [4, 11], [6, 11], [3, 12]]);
+  return b;
+}
+const OPEN_FOUR_CELLS = [{ x: 4, y: 7 }, { x: 8, y: 7 }];
+
 const LEVELS: AiLevel[] = ['easy', 'medium', 'hard'];
 
 describe('chooseMove', () => {
@@ -117,6 +129,12 @@ describe('chooseMove', () => {
     b[first.y][first.x] = 'X';
     // O defends with medium; X must finish within its next 3 moves.
     expect(playOut(b, 'O', { X: 'hard', O: 'medium' }, 6)).toBe('X');
+  });
+
+  it.each([3000, 200])('hard plays the open four rather than a longer chain of fours (budget %ims)', (timeMs) => {
+    for (let i = 0; i < 3; i++) {
+      expect(OPEN_FOUR_CELLS).toContainEqual(chooseMove(openFourAmongChains(), 'O', 'hard', { timeMs }));
+    }
   });
 
   it('hard defends against the opponent continuous-four win', () => {
