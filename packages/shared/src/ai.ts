@@ -152,7 +152,7 @@ export function chooseMove(board: Board, mark: Mark, level: AiLevel, opts: AiOpt
 
   if (useVcf && bestScore < WIN_THRESHOLD) {
     e.deadline = Math.max(deadline, now() + 300);
-    best = e.avoidOpponentVcf(side, best, rootList, board);
+    best = e.avoidOpponentVcf(side, best, rootList, board, bestScore <= -WIN_THRESHOLD);
   }
 
   return done(best, depthDone, bestScore);
@@ -680,24 +680,33 @@ class Engine {
   }
 
   /**
-   * Among the best root moves, picks the first that leaves the opponent no VCF. Falls back to
-   * `best` if every candidate loses or time runs out.
+   * Among the best root moves, picks the first that leaves the opponent no VCF. If every
+   * candidate is refuted, picks the one whose refutation is longest: in a lost position it still
+   * makes the opponent find the win (e.g. it blocks an open three rather than allowing an open
+   * four). With `lost`, all root moves are tried, since the search scored them all as losing.
    */
-  avoidOpponentVcf(side: number, best: number, list: RootMove[], board: Board): number {
-    const candidates = [best, ...list.filter((m) => m.move !== best).sort((a, b) => b.score - a.score).map((m) => m.move)].slice(0, 6);
+  avoidOpponentVcf(side: number, best: number, list: RootMove[], board: Board, lost: boolean): number {
+    const ordered = [best, ...list.filter((m) => m.move !== best).sort((a, b) => b.score - a.score).map((m) => m.move)];
+    const candidates = lost ? ordered : ordered.slice(0, 6);
+    let fallback = best;
+    let longest = 0;
     try {
       for (const c of candidates) {
         this.play(c, side);
-        // Shallow first: a short refutation is found even if the deep check would time out.
-        let refuted = false;
-        for (let d = 1; d <= VCF_DEFENSE_DEPTH && !refuted; d++) refuted = this.vcf(3 - side, d) >= 0;
+        // Shallow first, so the depth at which a refutation appears is its length in fours.
+        let refutedAt = 0;
+        for (let d = 1; d <= VCF_DEFENSE_DEPTH && !refutedAt; d++) if (this.vcf(3 - side, d) >= 0) refutedAt = d;
         this.undo(c, side);
-        if (!refuted) return c;
+        if (!refutedAt) return c;
+        if (refutedAt > longest) {
+          longest = refutedAt;
+          fallback = c;
+        }
       }
     } catch (err) {
       if (err !== TIMEOUT) throw err;
       this.load(board);
     }
-    return best;
+    return fallback;
   }
 }

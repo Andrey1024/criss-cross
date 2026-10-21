@@ -51,6 +51,18 @@ function openFourAmongChains(): Board {
 }
 const OPEN_FOUR_CELLS = [{ x: 4, y: 7 }, { x: 8, y: 7 }];
 
+/**
+ * From a simulated game: X (to move) is lost, since O can force a win whatever X does, but O's
+ * open three on the (2,8)-(4,6) diagonal is the quickest way. X used to give up and play
+ * elsewhere; it should still block at (5,5) or (1,9) and make O find the longer win.
+ */
+function lostButMustBlock(): Board {
+  const b = createBoard();
+  place(b, 'X', [[3, 5], [3, 8], [3, 9], [5, 9], [6, 9], [4, 10], [6, 10], [8, 10], [5, 11], [6, 11], [6, 12]]);
+  place(b, 'O', [[4, 6], [3, 7], [5, 7], [2, 8], [4, 8], [6, 8], [4, 9], [7, 9], [5, 10], [6, 13], [7, 13]]);
+  return b;
+}
+
 const LEVELS: AiLevel[] = ['easy', 'medium', 'hard'];
 
 describe('chooseMove', () => {
@@ -135,6 +147,10 @@ describe('chooseMove', () => {
     for (let i = 0; i < 3; i++) {
       expect(OPEN_FOUR_CELLS).toContainEqual(chooseMove(openFourAmongChains(), 'O', 'hard', { timeMs }));
     }
+  });
+
+  it('hard keeps defending in a lost position instead of allowing an open four', () => {
+    expect([{ x: 5, y: 5 }, { x: 1, y: 9 }]).toContainEqual(chooseMove(lostButMustBlock(), 'X', 'hard'));
   });
 
   it('hard defends against the opponent continuous-four win', () => {
