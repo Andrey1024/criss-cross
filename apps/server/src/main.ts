@@ -39,10 +39,19 @@ async function bootstrap() {
   const webDist = process.env.WEB_DIST ?? join(__dirname, '..', '..', 'web', 'dist');
   if (config.isProduction && existsSync(webDist)) {
     // "/" is served by the static index.html (the pre-rendered landing page).
-    app.useStaticAssets(webDist);
+    app.useStaticAssets(webDist, {
+      setHeaders: (res, path) => {
+        // Hashed bundles and the versioned engine folder never change: cache them for good.
+        if (/[/\\](assets|engine[/\\]rapfi-[0-9a-f]+)[/\\]/.test(path)) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+      },
+    });
     const appShell = existsSync(join(webDist, 'app.html')) ? 'app.html' : 'index.html';
     app.use((req: any, res: any, next: () => void) => {
       if (req.method !== 'GET' || req.path.startsWith('/api') || req.path.startsWith('/socket.io')) return next();
+      // A missing engine or asset file is a 404, not the app shell.
+      if (req.path.startsWith('/engine/') || req.path.startsWith('/assets/')) return next();
       // Pre-rendered public pages first, then the client-side app shell.
       const page = PRERENDERED[req.path.replace(/\/+$/, '')];
       res.sendFile(join(webDist, page && existsSync(join(webDist, page)) ? page : appShell));

@@ -1,0 +1,5 @@
+Rapfi gomoku engine, compiled to WebAssembly for playfiveinarow.com's Expert level.
+
+Engine: https://github.com/dhbloo/rapfi, commit 3c94c2a976f24a0dd1c5517623e9ab6fffe66bd7 (GNU GPL v3, see COPYING.txt)
+Networks: https://github.com/dhbloo/rapfi-networks, commit e32ad77a5364363b3e3a02b3f9e8610ade19ea98 (CC0)
+Built with emscripten/emsdk:6.0.12 by scripts/build-rapfi.sh in this site's repository.

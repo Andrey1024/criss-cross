@@ -55,6 +55,18 @@ When creating a room, a signed-in player can tick **Unrated, invite only**. Such
 
 A guest is stored as a `User` row with `isGuest = true` and no email, so games, moves and chat work unchanged. The guest gets its own httpOnly cookie (`cc_guest`, valid for 30 days), which is accepted only on the socket, and only for unrated rooms. A guest token is never accepted as a signed-in session, and guests are hidden from the admin user list.
 
+## Computer opponent
+
+Easy, Medium and Hard use the site's own engine in `packages/shared/src/ai.ts`. It's a negamax search with VCF (forced wins by chains of fours), and it runs in a Web Worker.
+
+**Expert** uses [Rapfi](https://github.com/dhbloo/rapfi), a Gomocup-winning engine, compiled to WebAssembly and run in the visitor's browser.
+
+- The files live in `apps/web/public/engine/rapfi-<commit>/`: about 1.2 MB of WebAssembly plus 10 MB of freestyle network data. They're downloaded only when someone picks Expert, and are cached for good because the folder name is versioned.
+- To rebuild them, run `scripts/build-rapfi.sh` (needs Docker). It pins the Rapfi commit, the network commit and the Emscripten version.
+- Rapfi is GPL-3.0, so the engine folder ships with `COPYING.txt` and `SOURCE.txt`, and the Expert option links to them. The network weights are CC0.
+- Expert talks to the engine over the Gomocup text protocol (`START`, `INFO …`, `BOARD … DONE`) through `apps/web/public/engine/rapfi-worker.js` and `apps/web/src/lib/rapfi.ts`.
+- It needs WebAssembly SIMD, which every major browser has supported since 2023. Without it, the page offers Hard instead.
+
 ## Banning
 
 To ban a user, open **Admin → Users → Ban** and give a reason and a duration (1, 7 or 30 days, or permanent). The ban takes effect immediately:

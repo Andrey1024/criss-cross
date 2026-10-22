@@ -16,18 +16,24 @@ import { useAuth } from '../lib/auth';
 import { usePageTitle } from '../lib/usePageTitle';
 import { PAGES } from '../seo';
 import { useAiWorker } from '../lib/useAiWorker';
+import { RAPFI_DIR, useRapfi, type RapfiStatus } from '../lib/rapfi';
 
-const LEVEL_INFO: Record<AiLevel, { label: string; hint: string }> = {
+/** Easy to Hard are our own engine; Expert is Rapfi, loaded on demand. */
+type Level = AiLevel | 'expert';
+const LEVELS: readonly Level[] = [...AI_LEVELS, 'expert'];
+
+const LEVEL_INFO: Record<Level, { label: string; hint: string }> = {
   easy: { label: 'Easy', hint: 'Looks two moves ahead and answers your threats.' },
   medium: { label: 'Medium', hint: 'Searches up to six moves ahead.' },
   hard: { label: 'Hard', hint: 'Thinks up to 3 seconds, searches deeper and finds forced wins.' },
+  expert: { label: 'Expert', hint: 'Rapfi, a world-champion engine. Very hard to beat.' },
 };
 /** Keeps instant replies from feeling abrupt. */
 const MIN_THINK_MS = 350;
 const SETTINGS_KEY = 'cc.computer.settings';
 
 interface Settings {
-  level: AiLevel;
+  level: Level;
   mark: Mark;
 }
 
@@ -35,7 +41,7 @@ function loadSettings(): Settings {
   if (typeof window === 'undefined') return { level: 'medium', mark: 'X' }; // pre-rendering
   try {
     const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? 'null');
-    if (AI_LEVELS.includes(saved?.level) && (saved?.mark === 'X' || saved?.mark === 'O')) return saved;
+    if (LEVELS.includes(saved?.level) && (saved?.mark === 'X' || saved?.mark === 'O')) return saved;
   } catch {
     // Storage unavailable or corrupt: fall back to defaults.
   }
@@ -56,6 +62,8 @@ export function ComputerPage() {
   const [playing, setPlaying] = useState(false);
   const [moves, setMoves] = useState<PlayedMove[]>([]);
   const think = useAiWorker();
+  // Expert's download starts as soon as it is picked, so it is usually ready by Start.
+  const rapfi = useRapfi(settings.level === 'expert');
   const { user } = useAuth();
   usePageTitle(PAGES[2].title);
 
@@ -81,7 +89,8 @@ export function ComputerPage() {
     if (!thinking) return;
     let cancelled = false;
     const started = Date.now();
-    think(board, aiMark, settings.level)
+    const level = settings.level;
+    (level === 'expert' ? rapfi.think(moves, aiMark) : think(board, aiMark, level))
       .then(async (move) => {
         const wait = MIN_THINK_MS - (Date.now() - started);
         if (wait > 0) await new Promise((r) => setTimeout(r, wait));
@@ -93,7 +102,7 @@ export function ComputerPage() {
     return () => {
       cancelled = true;
     };
-  }, [thinking, board, aiMark, settings.level, think]);
+  }, [thinking, board, moves, aiMark, settings.level, think, rapfi.think]);
 
   function start() {
     saveSettings(settings);
@@ -119,7 +128,7 @@ export function ComputerPage() {
   const canUndo = playing && !thinking && moves.some((m) => m.mark === myMark);
 
   if (!playing) {
-    return <Setup settings={settings} onChange={setSettings} onStart={start} />;
+    return <Setup settings={settings} onChange={setSettings} onStart={start} expert={rapfi.status} />;
   }
 
   return (
@@ -134,7 +143,13 @@ export function ComputerPage() {
             </p>
           </div>
           <div className="shrink-0">
-            <Status thinking={thinking} winner={winner} draw={draw} myMark={myMark} />
+            <Status
+              thinking={thinking}
+              winner={winner}
+              draw={draw}
+              myMark={myMark}
+              loading={settings.level === 'expert' && rapfi.status?.state === 'loading' ? rapfi.status.progress : undefined}
+            />
           </div>
         </div>
         <div className="overflow-x-auto">
@@ -146,6 +161,14 @@ export function ComputerPage() {
             onMove={move}
           />
         </div>
+        {settings.level === 'expert' && rapfi.status?.state === 'error' && (
+          <div role="alert" className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+            <p className="min-w-0 flex-1 text-sm text-red-800">The Expert engine couldn't start in this browser.</p>
+            <Button size="sm" onClick={() => setSettings({ ...settings, level: 'hard' })}>
+              Switch to Hard
+            </Button>
+          </div>
+        )}
       </div>
 
       <Card title="Players">
@@ -178,7 +201,17 @@ export function ComputerPage() {
   );
 }
 
-function Setup({ settings, onChange, onStart }: { settings: Settings; onChange: (s: Settings) => void; onStart: () => void }) {
+function Setup({
+  settings,
+  onChange,
+  onStart,
+  expert,
+}: {
+  settings: Settings;
+  onChange: (s: Settings) => void;
+  onStart: () => void;
+  expert: RapfiStatus | null;
+}) {
   const option = (selected: boolean) =>
     `rounded-md border px-3 py-2 text-left text-sm transition-colors ${
       selected ? 'border-slate-900 bg-slate-50 ring-1 ring-slate-900' : 'border-slate-200 hover:border-slate-400'
@@ -189,16 +222,16 @@ function Setup({ settings, onChange, onStart }: { settings: Settings; onChange: 
       <div>
         <h1 className="text-xl font-semibold">Play five in a row against the computer</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Free and instant, no account needed. Choose a level: Easy for learning, Medium for a solid game, or Hard if you
-          want an opponent that searches deep and finds forced wins.
+          Free and instant, no account needed. Choose a level: Easy for learning, Medium for a solid game, Hard if you want
+          an opponent that finds forced wins, or Expert to face a world-champion engine.
         </p>
       </div>
       <Card title="New game">
         <div className="space-y-5">
           <fieldset>
             <legend className="mb-2 text-sm font-medium text-slate-700">Difficulty</legend>
-            <div className="grid gap-2 sm:grid-cols-3">
-              {AI_LEVELS.map((level) => (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {LEVELS.map((level) => (
                 <button
                   key={level}
                   type="button"
@@ -211,6 +244,7 @@ function Setup({ settings, onChange, onStart }: { settings: Settings; onChange: 
                 </button>
               ))}
             </div>
+            {settings.level === 'expert' && <ExpertNote status={expert} />}
           </fieldset>
 
           <fieldset>
@@ -242,9 +276,55 @@ function Setup({ settings, onChange, onStart }: { settings: Settings; onChange: 
   );
 }
 
-function Status({ thinking, winner, draw, myMark }: { thinking: boolean; winner: Mark | null; draw: boolean; myMark: Mark }) {
+/** Download progress for Expert, and credit for the engine (its GPL licence asks for the source to be offered). */
+function ExpertNote({ status }: { status: RapfiStatus | null }) {
+  const link = 'font-medium text-blue-700 hover:underline';
+  return (
+    <p className="mt-2 text-xs text-slate-500">
+      {status?.state === 'loading' && (
+        <span className="font-medium text-slate-700">
+          Downloading the engine{status.progress !== null && ` · ${Math.round(status.progress * 100)}%`}…{' '}
+        </span>
+      )}
+      {status?.state === 'ready' && <span className="font-medium text-emerald-700">Engine ready. </span>}
+      {status?.state === 'error' && <span className="font-medium text-red-700">The engine couldn't start in this browser. </span>}
+      Expert runs{' '}
+      <a href="https://github.com/dhbloo/rapfi" className={link} target="_blank" rel="noopener">
+        Rapfi
+      </a>{' '}
+      by dhbloo in your browser (about 11 MB, downloaded once). Rapfi is free software under the GPL-3.0;{' '}
+      <a href={`${RAPFI_DIR}SOURCE.txt`} className={link} target="_blank" rel="noopener">
+        source and licence
+      </a>
+      .
+    </p>
+  );
+}
+
+function Status({
+  thinking,
+  winner,
+  draw,
+  myMark,
+  loading,
+}: {
+  thinking: boolean;
+  winner: Mark | null;
+  draw: boolean;
+  myMark: Mark;
+  /** Expert's download progress while it is still loading (null when unknown). */
+  loading?: number | null;
+}) {
   if (winner) return winner === myMark ? <Badge tone="green">You won!</Badge> : <Badge tone="red">You lost</Badge>;
   if (draw) return <Badge>Draw — the board is full</Badge>;
+  if (thinking && loading !== undefined) {
+    return (
+      <Badge tone="amber">
+        <span className="mr-1.5 h-2.5 w-2.5 animate-spin rounded-full border-2 border-amber-300 border-t-amber-700" aria-hidden />
+        Loading engine{loading !== null && ` ${Math.round(loading * 100)}%`}…
+      </Badge>
+    );
+  }
   if (thinking) {
     return (
       <Badge tone="amber">
@@ -257,7 +337,7 @@ function Status({ thinking, winner, draw, myMark }: { thinking: boolean; winner:
   return <Badge tone="green">Your turn</Badge>;
 }
 
-function PlayerRow({ mark, active, won, you, level }: { mark: Mark; active: boolean; won: boolean; you?: boolean; level?: AiLevel }) {
+function PlayerRow({ mark, active, won, you, level }: { mark: Mark; active: boolean; won: boolean; you?: boolean; level?: Level }) {
   const { user } = useAuth();
   return (
     <div className={`flex items-center gap-3 rounded-md border px-3 py-2 ${active ? 'border-slate-400 bg-slate-50' : 'border-slate-100'}`}>
