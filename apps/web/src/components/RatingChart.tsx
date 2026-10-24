@@ -1,6 +1,7 @@
 import { useMemo, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import type { RatingPoint } from '@cc/shared';
 import { formatDate } from '../lib/format';
+import { useT } from '../i18n';
 
 const W = 640;
 const H = 180;
@@ -9,6 +10,7 @@ const PAD = { top: 12, right: 52, bottom: 24, left: 40 };
 /** Rating after each rated game, evenly spaced by game, with a crosshair tooltip. */
 export function RatingChart({ points }: { points: RatingPoint[] }) {
   const [active, setActive] = useState<number | null>(null);
+  const t = useT();
 
   const geo = useMemo(() => {
     const ratings = points.map((p) => p.rating);
@@ -27,7 +29,7 @@ export function RatingChart({ points }: { points: RatingPoint[] }) {
   }, [points]);
 
   if (points.length < 2) {
-    return <p className="py-6 text-center text-sm text-slate-500">Your rating chart appears after your first rated game.</p>;
+    return <p className="py-6 text-center text-sm text-slate-500">{t.chart.empty}</p>;
   }
 
   const last = points.length - 1;
@@ -57,7 +59,7 @@ export function RatingChart({ points }: { points: RatingPoint[] }) {
         viewBox={`0 0 ${W} ${H}`}
         className="h-auto w-full touch-none select-none outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
         role="img"
-        aria-label={`Rating history: from ${points[0].rating} to ${points[last].rating} over ${last} rated games`}
+        aria-label={t.chart.label(points[0].rating, points[last].rating, last)}
         tabIndex={0}
         onPointerMove={onPointer}
         onPointerDown={onPointer}
@@ -101,7 +103,7 @@ export function RatingChart({ points }: { points: RatingPoint[] }) {
         >
           <p className="text-sm font-semibold tabular-nums text-slate-900">{points[active].rating}</p>
           <p className="text-slate-500">
-            {active === 0 ? 'Start' : `After game ${active}`} · {formatDate(points[active].date)}
+            {active === 0 ? t.chart.start : t.chart.afterGame(active)} · {formatDate(points[active].date)}
           </p>
         </div>
       )}

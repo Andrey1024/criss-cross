@@ -1,50 +1,18 @@
 import type { BanInfo, EndReason, GameResult, Outcome } from '@cc/shared';
+import { currentLocale, currentMessages } from '../i18n';
 
-const dateTime = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-const date = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' });
-const time = new Intl.DateTimeFormat(undefined, { timeStyle: 'short' });
-
-export const formatDateTime = (iso: string) => dateTime.format(new Date(iso));
-export const formatDate = (iso: string) => date.format(new Date(iso));
-export const formatTime = (iso: string) => time.format(new Date(iso));
+// Dates and labels follow the language of the page being rendered.
+export const formatDateTime = (iso: string) =>
+  new Intl.DateTimeFormat(currentLocale(), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));
+export const formatDate = (iso: string) => new Intl.DateTimeFormat(currentLocale(), { dateStyle: 'medium' }).format(new Date(iso));
+export const formatTime = (iso: string) => new Intl.DateTimeFormat(currentLocale(), { timeStyle: 'short' }).format(new Date(iso));
 
 export function banUntil(ban: BanInfo): string {
-  return ban.expiresAt ? `until ${formatDateTime(ban.expiresAt)}` : 'permanently';
+  const t = currentMessages().banned;
+  return ban.expiresAt ? t.untilDate(formatDateTime(ban.expiresAt)) : t.permanently;
 }
 
-export const OUTCOME_LABEL: Record<Outcome, string> = { win: 'Win', loss: 'Loss', draw: 'Draw', none: 'No result' };
-
-export const RESULT_LABEL: Record<GameResult, string> = {
-  WIN: 'Five in a row',
-  DRAW: 'Board full',
-  RESIGNED: 'Resigned',
-  ABANDONED: 'Abandoned',
-  TIMEOUT: 'Time ran out',
-};
-
-export const END_REASON_LABEL: Record<EndReason, string> = {
-  five: 'five in a row',
-  draw: 'the board is full',
-  resigned: 'resignation',
-  abandoned: 'the opponent left',
-  banned: 'the opponent was banned',
-  closed: 'the room was closed',
-  timeout: 'time ran out',
-};
-
-const ERROR_LABEL: Record<string, string> = {
-  ROOM_NOT_FOUND: 'This room no longer exists.',
-  GAME_NOT_ACTIVE: 'The game is not running.',
-  NOT_A_PLAYER: 'You are watching this game.',
-  NOT_YOUR_TURN: "It's not your turn.",
-  CELL_TAKEN: 'That cell is already taken.',
-  OUT_OF_BOUNDS: 'That cell is outside the board.',
-  GAME_NOT_FINISHED: 'The game is still running.',
-  OPPONENT_LEFT: 'Your opponent has left the room.',
-  SIGN_IN_REQUIRED: 'Sign in to join this room.',
-  NOT_IN_ROOM: 'You are not in this room.',
-  RATE_LIMITED: "You're sending messages too fast.",
-  TIMEOUT: 'The server did not respond. Check your connection.',
-  INVALID_PAYLOAD: 'Invalid request.',
-};
-export const errorText = (code: string) => ERROR_LABEL[code] ?? code;
+export const outcomeLabel = (o: Outcome) => currentMessages().outcome[o];
+export const resultLabel = (r: GameResult) => currentMessages().result[r];
+export const endReasonLabel = (r: EndReason) => currentMessages().endReason[r];
+export const errorText = (code: string) => currentMessages().errors[code] ?? code;

@@ -1,13 +1,24 @@
 import type { ReactNode } from 'react';
-import { Link } from 'react-router';
+import { DEFAULT_LANG, LOCALE, Link, useLang, useT } from '../i18n';
 import { usePageTitle } from '../lib/usePageTitle';
-import { PAGES, SITE_NAME, SUPPORT_EMAIL } from '../seo';
+import { pageMeta, SITE_NAME, SUPPORT_EMAIL } from '../seo';
 
 const UPDATED = '17 October 2026';
 
 function LegalPage({ title, children }: { title: string; children: ReactNode }) {
+  // Legal texts are published in English only; other languages say so up front.
+  const lang = useLang();
+  const t = useT();
   return (
-    <article className="mx-auto max-w-3xl space-y-8 py-2 text-slate-700 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-slate-900 [&_li]:leading-relaxed [&_p]:leading-relaxed [&_section]:space-y-3 [&_ul]:list-disc [&_ul]:space-y-1.5 [&_ul]:pl-5">
+    <article
+      lang="en"
+      className="mx-auto max-w-3xl space-y-8 py-2 text-slate-700 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-slate-900 [&_li]:leading-relaxed [&_p]:leading-relaxed [&_section]:space-y-3 [&_ul]:list-disc [&_ul]:space-y-1.5 [&_ul]:pl-5"
+    >
+      {lang !== DEFAULT_LANG && (
+        <p lang={LOCALE[lang]} className="rounded-md border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
+          {t.common.legalEnglishOnly}
+        </p>
+      )}
       <header>
         <h1 className="text-3xl font-bold tracking-tight text-slate-900">{title}</h1>
         <p className="mt-2 text-sm text-slate-500">Last updated {UPDATED}</p>
@@ -24,7 +35,7 @@ const Email = () => (
 );
 
 export function PrivacyPage() {
-  usePageTitle(PAGES.find((p) => p.path === '/privacy')!.title);
+  usePageTitle(pageMeta('/privacy', DEFAULT_LANG).title);
   return (
     <LegalPage title="Privacy policy">
       <p>
@@ -117,7 +128,7 @@ export function PrivacyPage() {
 }
 
 export function TermsPage() {
-  usePageTitle(PAGES.find((p) => p.path === '/terms')!.title);
+  usePageTitle(pageMeta('/terms', DEFAULT_LANG).title);
   return (
     <LegalPage title="Terms of service">
       <p>By using {SITE_NAME} you agree to these terms. They are short because the service is simple and free.</p>

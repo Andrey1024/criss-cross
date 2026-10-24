@@ -1,15 +1,17 @@
 import { useState, type FormEvent } from 'react';
-import { Link } from 'react-router';
 import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 import { MarkIcon } from '../components/Board';
 import { Button, ErrorNote, inputClass } from '../components/ui';
 import { ApiError } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useTheme } from '../lib/theme';
+import { Link, useLang, useT } from '../i18n';
 
 export function LoginPage() {
   const { config, loginWithGoogle, devLogin } = useAuth();
   const theme = useTheme();
+  const t = useT();
+  const lang = useLang();
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
@@ -35,8 +37,8 @@ export function LoginPage() {
               </span>
             ))}
           </div>
-          <h1 className="text-xl font-bold">Sign in to Five in a Row</h1>
-          <p className="mt-1 text-sm text-slate-500">Five in a row, online. Sign in to play.</p>
+          <h1 className="text-xl font-bold">{t.login.title}</h1>
+          <p className="mt-1 text-sm text-slate-500">{t.login.subtitle}</p>
         </div>
 
         {error && <div className="mb-4"><ErrorNote>{error}</ErrorNote></div>}
@@ -47,36 +49,37 @@ export function LoginPage() {
           <div className="flex justify-center [color-scheme:light]">
             <GoogleOAuthProvider clientId={config.googleClientId}>
               <GoogleLogin
-                key={theme}
+                key={`${theme}-${lang}`}
                 theme={theme === 'dark' ? 'filled_black' : 'outline'}
+                locale={lang}
                 onSuccess={(r) => r.credential && handle(loginWithGoogle(r.credential))}
-                onError={() => setError('Google sign-in failed')}
+                onError={() => setError(t.login.googleFailed)}
               />
             </GoogleOAuthProvider>
           </div>
         ) : (
-          config && !config.devLogin && <ErrorNote>Google sign-in is not configured on the server (GOOGLE_CLIENT_ID).</ErrorNote>
+          config && !config.devLogin && <ErrorNote>{t.login.googleMissing}</ErrorNote>
         )}
 
         {config?.devLogin && (
           <form onSubmit={submitDev} className="mt-6 space-y-2 border-t border-dashed border-slate-200 pt-5">
-            <p className="text-xs font-medium uppercase tracking-wide text-amber-700">Dev login (DEV_LOGIN=true)</p>
-            <input className={`${inputClass} w-full`} type="email" required placeholder="email@example.com" value={email} onChange={(e) => setEmail(e.target.value)} aria-label="Email" />
-            <input className={`${inputClass} w-full`} placeholder="Display name (optional)" value={name} onChange={(e) => setName(e.target.value)} aria-label="Display name" />
+            <p className="text-xs font-medium uppercase tracking-wide text-amber-700">{t.login.devTitle}</p>
+            <input className={`${inputClass} w-full`} type="email" required placeholder="email@example.com" value={email} onChange={(e) => setEmail(e.target.value)} aria-label={t.login.email} />
+            <input className={`${inputClass} w-full`} placeholder={t.login.displayNameOptional} value={name} onChange={(e) => setName(e.target.value)} aria-label={t.login.displayName} />
             <Button type="submit" variant="secondary" className="w-full">
-              Sign in without Google
+              {t.login.devSubmit}
             </Button>
           </form>
         )}
 
         <p className="mt-6 border-t border-slate-100 pt-4 text-center text-xs text-slate-500">
-          Just want to try it?{' '}
+          {t.login.tryIt}{' '}
           <Link to="/play/computer" className="font-medium text-blue-700 hover:underline">
-            Play the computer without an account
+            {t.login.playWithoutAccount}
           </Link>
           <br />
           <Link to="/" className="mt-2 inline-block hover:text-slate-800">
-            ← Back to home
+            {t.login.backHome}
           </Link>
         </p>
       </div>

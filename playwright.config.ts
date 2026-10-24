@@ -7,7 +7,8 @@ export default defineConfig({
   use: { baseURL: 'http://localhost:5173', ...devices['Desktop Chrome'] },
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:5173',
+    // An API route through Vite's proxy: ready only once both the web and API servers are up.
+    url: 'http://localhost:5173/api/auth/config',
     reuseExistingServer: true,
     timeout: 120_000,
   },

@@ -1,13 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router';
 import type { LeaderboardResponse } from '@cc/shared';
 import { RatingDiff } from '../components/RatingBadge';
 import { Avatar, Card, ErrorNote, Spinner } from '../components/ui';
 import { api } from '../lib/api';
 import { useMe } from '../lib/auth';
+import { Link, useT } from '../i18n';
 
 export function LeaderboardPage() {
   const me = useMe();
+  const t = useT();
   const { data, error, isPending } = useQuery({
     queryKey: ['leaderboard'],
     queryFn: () => api<LeaderboardResponse>('/leaderboard'),
@@ -19,11 +20,8 @@ export function LeaderboardPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold">Leaderboard</h1>
-        <p className="text-sm text-slate-500">
-          Best players by rating over the last {data.days} days. You need at least {data.minGames} rated games in that time
-          and a settled (non-provisional) rating to be listed.
-        </p>
+        <h1 className="text-xl font-semibold">{t.leaderboard.title}</h1>
+        <p className="text-sm text-slate-500">{t.leaderboard.intro(data.days, data.minGames)}</p>
       </div>
 
       <MyStatus data={data} />
@@ -31,8 +29,11 @@ export function LeaderboardPage() {
       <Card>
         {data.entries.length === 0 ? (
           <p className="py-8 text-center text-sm text-slate-500">
-            Nobody qualifies yet. Play rated games in the <Link to="/" className="text-blue-700 hover:underline">lobby</Link> to
-            get on the board.
+            {t.leaderboard.nobody}{' '}
+            <Link to="/" className="text-blue-700 hover:underline">
+              {t.leaderboard.lobby}
+            </Link>{' '}
+            {t.leaderboard.nobodyRest}
           </p>
         ) : (
           <div className="overflow-x-auto">
@@ -40,12 +41,12 @@ export function LeaderboardPage() {
               <thead className="text-xs uppercase tracking-wide text-slate-400">
                 <tr>
                   <th className="w-10 pb-2 font-medium">#</th>
-                  <th className="pb-2 font-medium">Player</th>
-                  <th className="pb-2 text-right font-medium">Rating</th>
-                  <th className="pb-2 text-right font-medium">{data.days} days</th>
-                  <th className="pb-2 text-right font-medium">Games</th>
-                  <th className="pb-2 text-right font-medium">W / L / D</th>
-                  <th className="pb-2 text-right font-medium">Win %</th>
+                  <th className="pb-2 font-medium">{t.leaderboard.player}</th>
+                  <th className="pb-2 text-right font-medium">{t.leaderboard.rating}</th>
+                  <th className="pb-2 text-right font-medium">{t.leaderboard.days(data.days)}</th>
+                  <th className="pb-2 text-right font-medium">{t.leaderboard.games}</th>
+                  <th className="pb-2 text-right font-medium">{t.leaderboard.wld}</th>
+                  <th className="pb-2 text-right font-medium">{t.leaderboard.winPct}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -56,7 +57,7 @@ export function LeaderboardPage() {
                       <span className="flex items-center gap-2">
                         <Avatar user={e.user} size={24} />
                         <span className="truncate font-medium">{e.user.name}</span>
-                        {e.user.id === me.id && <span className="text-xs text-slate-400">(you)</span>}
+                        {e.user.id === me.id && <span className="text-xs text-slate-400">{t.leaderboard.you}</span>}
                       </span>
                     </td>
                     <td className="py-2.5 text-right font-semibold tabular-nums">{e.rating}</td>
@@ -81,17 +82,16 @@ export function LeaderboardPage() {
 
 function MyStatus({ data }: { data: LeaderboardResponse }) {
   const { me } = data;
+  const t = useT();
   let text: string;
-  if (me.rank !== null) text = `You are #${me.rank} on the leaderboard.`;
-  else if (me.gamesNeeded > 0)
-    text = `Play ${me.gamesNeeded} more rated ${me.gamesNeeded === 1 ? 'game' : 'games'} in the next ${data.days} days to qualify.`;
-  else if (me.provisional) text = 'Your rating is still provisional. It settles after a few more rated games.';
-  else text = `You qualify, but you're outside the top ${data.entries.length}.`;
+  if (me.rank !== null) text = t.leaderboard.rank(me.rank);
+  else if (me.gamesNeeded > 0) text = t.leaderboard.needMore(me.gamesNeeded, data.days);
+  else if (me.provisional) text = t.leaderboard.provisional;
+  else text = t.leaderboard.outside(data.entries.length);
   return (
     <p className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
       <span className="font-medium text-slate-800">
-        Your rating: {me.rating}
-        {me.provisional && '?'}
+        {t.leaderboard.yourRating(`${me.rating}${me.provisional ? '?' : ''}`)}
       </span>{' '}
       · {text}
     </p>

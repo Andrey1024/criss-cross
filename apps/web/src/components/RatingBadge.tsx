@@ -1,11 +1,11 @@
 import type { RatingView } from '@cc/shared';
-
-const PROVISIONAL_HINT = 'Provisional rating: it settles after more rated games';
+import { useT } from '../i18n';
 
 /** "1612", or "1540?" while the rating is provisional (lichess style). */
 export function RatingBadge({ rating, className = '' }: { rating: RatingView; className?: string }) {
+  const t = useT();
   return (
-    <span className={`tabular-nums ${className}`} title={rating.provisional ? PROVISIONAL_HINT : undefined}>
+    <span className={`tabular-nums ${className}`} title={rating.provisional ? t.chart.provisional : undefined}>
       {rating.rating}
       {rating.provisional && '?'}
     </span>

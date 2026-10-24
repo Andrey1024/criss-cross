@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import type { Board as BoardType, Mark, Point } from '@cc/shared';
+import { useT } from '../i18n';
 
 export const MARK_COLOR: Record<Mark, string> = { X: 'text-blue-600', O: 'text-red-500' };
 
@@ -26,6 +27,7 @@ interface BoardProps {
 
 /** White grid of square cells; X and O are drawn inside the cells. */
 export function Board({ board, lastMove, winLine, playable, onMove }: BoardProps) {
+  const t = useT();
   const size = board.length;
   const winSet = new Set(winLine?.map((p) => `${p.x},${p.y}`));
   const style = {
@@ -37,7 +39,7 @@ export function Board({ board, lastMove, winLine, playable, onMove }: BoardProps
 
   return (
     <div className="relative inline-block rounded-md border border-slate-300 bg-slate-200 p-px shadow-sm">
-      <div className="grid gap-px" style={style} role="grid" aria-label="Game board">
+      <div className="grid gap-px" style={style} role="grid" aria-label={t.board.label}>
         {board.map((row, y) =>
           row.map((cell, x) => {
             const isLast = lastMove?.x === x && lastMove?.y === y;
@@ -48,7 +50,7 @@ export function Board({ board, lastMove, winLine, playable, onMove }: BoardProps
                 key={`${x},${y}`}
                 type="button"
                 role="gridcell"
-                aria-label={`Row ${y + 1}, column ${x + 1}${cell ? `: ${cell}` : ''}`}
+                aria-label={`${t.board.cell(y + 1, x + 1)}${cell ? `: ${cell}` : ''}`}
                 data-x={x}
                 data-y={y}
                 disabled={!canPlay}

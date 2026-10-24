@@ -55,6 +55,23 @@ When creating a room, a signed-in player can tick **Unrated, invite only**. Such
 
 A guest is stored as a `User` row with `isGuest = true` and no email, so games, moves and chat work unchanged. The guest gets its own httpOnly cookie (`cc_guest`, valid for 30 days), which is accepted only on the socket, and only for unrated rooms. A guest token is never accepted as a signed-in session, and guests are hidden from the admin user list.
 
+## Languages
+
+The site is in English and Russian.
+
+- **URLs:** English lives at the root (`/`, `/rules` …). Russian mirrors every route under `/ru` (`/ru`, `/ru/rules`, `/ru/room/…`), so shared links keep their language.
+- **Where the strings live:** UI text is in typed dictionaries in `apps/web/src/i18n/` (`en.ts` defines every key, and `ru.ts` must match it). Long-form pages such as the rules have one component per language.
+- **Links:** use `Link`, `NavLink`, `Navigate` and `useNavigate` from `src/i18n`, not from `react-router`. They add the language prefix automatically.
+- **Search engines:** public pages are pre-rendered per language with `hreflang` alternates, and listed in the sitemap.
+- **Choosing a language:** the header and footer switch languages and remember the choice. Visitors whose browser prefers another language get a suggestion banner, never a redirect.
+- **Not translated:** the admin panel and the privacy and terms pages stay in English.
+
+To add a language:
+
+1. Add it to `LANGS` and `LOCALE` in `src/i18n/index.tsx` and write its dictionary.
+2. Add its page text and FAQ in `src/seo.ts`.
+3. Map its pre-rendered files and app shell in `apps/server/src/main.ts`.
+
 ## Computer opponent
 
 Easy, Medium and Hard use the site's own engine in `packages/shared/src/ai.ts`. It's a negamax search with VCF (forced wins by chains of fours), and it runs in a Web Worker.

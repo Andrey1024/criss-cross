@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router';
 import {
   AI_LEVELS,
   boardFromMoves,
@@ -14,7 +13,8 @@ import { Board, MarkIcon } from '../components/Board';
 import { Avatar, Badge, Button, Card } from '../components/ui';
 import { useAuth } from '../lib/auth';
 import { usePageTitle } from '../lib/usePageTitle';
-import { PAGES } from '../seo';
+import { Link, useLang, useT } from '../i18n';
+import { pageMeta } from '../seo';
 import { useAiWorker } from '../lib/useAiWorker';
 import { RAPFI_DIR, useRapfi, type RapfiStatus } from '../lib/rapfi';
 
@@ -22,12 +22,6 @@ import { RAPFI_DIR, useRapfi, type RapfiStatus } from '../lib/rapfi';
 type Level = AiLevel | 'expert';
 const LEVELS: readonly Level[] = [...AI_LEVELS, 'expert'];
 
-const LEVEL_INFO: Record<Level, { label: string; hint: string }> = {
-  easy: { label: 'Easy', hint: 'Looks two moves ahead and answers your threats.' },
-  medium: { label: 'Medium', hint: 'Searches up to six moves ahead.' },
-  hard: { label: 'Hard', hint: 'Thinks up to 3 seconds, searches deeper and finds forced wins.' },
-  expert: { label: 'Expert', hint: 'Rapfi, a world-champion engine. Very hard to beat.' },
-};
 /** Keeps instant replies from feeling abrupt. */
 const MIN_THINK_MS = 350;
 const SETTINGS_KEY = 'cc.computer.settings';
@@ -65,7 +59,8 @@ export function ComputerPage() {
   // Expert's download starts as soon as it is picked, so it is usually ready by Start.
   const rapfi = useRapfi(settings.level === 'expert');
   const { user } = useAuth();
-  usePageTitle(PAGES[2].title);
+  const t = useT();
+  usePageTitle(pageMeta('/play/computer', useLang()).title);
 
   const myMark = settings.mark;
   const aiMark = otherMark(myMark);
@@ -137,9 +132,9 @@ export function ComputerPage() {
         {/* One line that never wraps, so the board doesn't jump as the status text changes. */}
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="truncate text-lg font-semibold">Playing the computer</h1>
+            <h1 className="truncate text-lg font-semibold">{t.computer.playing}</h1>
             <p className="truncate text-xs text-slate-500">
-              {LEVEL_INFO[settings.level].label} · {moves.length} {moves.length === 1 ? 'move' : 'moves'} · not saved to history
+              {t.computer.subtitle(t.computer.levels[settings.level].label, t.common.moves(moves.length))}
             </p>
           </div>
           <div className="shrink-0">
@@ -163,36 +158,36 @@ export function ComputerPage() {
         </div>
         {settings.level === 'expert' && rapfi.status?.state === 'error' && (
           <div role="alert" className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
-            <p className="min-w-0 flex-1 text-sm text-red-800">The Expert engine couldn't start in this browser.</p>
+            <p className="min-w-0 flex-1 text-sm text-red-800">{t.computer.expertCantStart}</p>
             <Button size="sm" onClick={() => setSettings({ ...settings, level: 'hard' })}>
-              Switch to Hard
+              {t.computer.switchToHard}
             </Button>
           </div>
         )}
       </div>
 
-      <Card title="Players">
+      <Card title={t.computer.players}>
         <div className="space-y-2">
           <PlayerRow mark={myMark} active={!over && turn === myMark} won={winner === myMark} you />
           <PlayerRow mark={aiMark} active={!over && turn === aiMark} won={winner === aiMark} level={settings.level} />
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <Button size="sm" variant="secondary" onClick={undo} disabled={!canUndo}>
-            Undo
+            {t.computer.undo}
           </Button>
           <Button size="sm" variant={over ? 'primary' : 'secondary'} onClick={() => setPlaying(false)}>
-            New game
+            {t.computer.newGameButton}
           </Button>
           <Link to="/" className="ml-auto text-sm text-slate-600 hover:text-slate-900">
-            {user ? '← Lobby' : '← Home'}
+            {user ? t.computer.backLobby : t.computer.backHome}
           </Link>
         </div>
         {!user && over && (
           <div className="mt-4 rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
-            <p className="font-medium">Ready for a real opponent?</p>
-            <p className="mt-0.5 text-blue-800">Sign in with Google to play people online, get a rating and climb the leaderboard.</p>
+            <p className="font-medium">{t.computer.readyTitle}</p>
+            <p className="mt-0.5 text-blue-800">{t.computer.readyText}</p>
             <Link to="/login?next=/" className="mt-2 inline-block font-medium text-blue-700 underline-offset-2 hover:underline">
-              Sign in to play people →
+              {t.computer.readyLink}
             </Link>
           </div>
         )}
@@ -212,6 +207,7 @@ function Setup({
   onStart: () => void;
   expert: RapfiStatus | null;
 }) {
+  const t = useT();
   const option = (selected: boolean) =>
     `rounded-md border px-3 py-2 text-left text-sm transition-colors ${
       selected ? 'border-slate-900 bg-slate-50 ring-1 ring-slate-900' : 'border-slate-200 hover:border-slate-400'
@@ -220,16 +216,13 @@ function Setup({
   return (
     <div className="mx-auto max-w-lg space-y-4">
       <div>
-        <h1 className="text-xl font-semibold">Play five in a row against the computer</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Free and instant, no account needed. Choose a level: Easy for learning, Medium for a solid game, Hard if you want
-          an opponent that finds forced wins, or Expert to face a world-champion engine.
-        </p>
+        <h1 className="text-xl font-semibold">{t.computer.setupTitle}</h1>
+        <p className="mt-1 text-sm text-slate-600">{t.computer.setupIntro}</p>
       </div>
-      <Card title="New game">
+      <Card title={t.computer.newGame}>
         <div className="space-y-5">
           <fieldset>
-            <legend className="mb-2 text-sm font-medium text-slate-700">Difficulty</legend>
+            <legend className="mb-2 text-sm font-medium text-slate-700">{t.computer.difficulty}</legend>
             <div className="grid gap-2 sm:grid-cols-2">
               {LEVELS.map((level) => (
                 <button
@@ -239,8 +232,8 @@ function Setup({
                   className={option(settings.level === level)}
                   onClick={() => onChange({ ...settings, level })}
                 >
-                  <span className="block font-medium">{LEVEL_INFO[level].label}</span>
-                  <span className="block text-xs text-slate-500">{LEVEL_INFO[level].hint}</span>
+                  <span className="block font-medium">{t.computer.levels[level].label}</span>
+                  <span className="block text-xs text-slate-500">{t.computer.levels[level].hint}</span>
                 </button>
               ))}
             </div>
@@ -248,27 +241,27 @@ function Setup({
           </fieldset>
 
           <fieldset>
-            <legend className="mb-2 text-sm font-medium text-slate-700">Your side</legend>
+            <legend className="mb-2 text-sm font-medium text-slate-700">{t.computer.yourSide}</legend>
             <div className="grid grid-cols-2 gap-2">
               {(['X', 'O'] as const).map((mark) => (
                 <button
                   key={mark}
                   type="button"
                   aria-pressed={settings.mark === mark}
-                  aria-label={`Play ${mark}`}
+                  aria-label={t.computer.play(mark)}
                   className={`${option(settings.mark === mark)} flex items-center gap-2`}
                   onClick={() => onChange({ ...settings, mark })}
                 >
                   <MarkIcon mark={mark} className="h-5 w-5" />
-                  <span>{mark === 'X' ? 'You move first' : 'Computer moves first'}</span>
+                  <span>{mark === 'X' ? t.computer.youFirst : t.computer.computerFirst}</span>
                 </button>
               ))}
             </div>
           </fieldset>
 
           <div className="flex items-center justify-between gap-3">
-            <p className="text-xs text-slate-500">Games against the computer are not saved to your history.</p>
-            <Button onClick={onStart}>Start</Button>
+            <p className="text-xs text-slate-500">{t.computer.notSaved}</p>
+            <Button onClick={onStart}>{t.computer.start}</Button>
           </div>
         </div>
       </Card>
@@ -278,23 +271,24 @@ function Setup({
 
 /** Download progress for Expert, and credit for the engine (its GPL licence asks for the source to be offered). */
 function ExpertNote({ status }: { status: RapfiStatus | null }) {
+  const t = useT();
   const link = 'font-medium text-blue-700 hover:underline';
   return (
     <p className="mt-2 text-xs text-slate-500">
       {status?.state === 'loading' && (
         <span className="font-medium text-slate-700">
-          Downloading the engine{status.progress !== null && ` · ${Math.round(status.progress * 100)}%`}…{' '}
+          {t.computer.downloading(status.progress === null ? null : Math.round(status.progress * 100))}
         </span>
       )}
-      {status?.state === 'ready' && <span className="font-medium text-emerald-700">Engine ready. </span>}
-      {status?.state === 'error' && <span className="font-medium text-red-700">The engine couldn't start in this browser. </span>}
-      Expert runs{' '}
+      {status?.state === 'ready' && <span className="font-medium text-emerald-700">{t.computer.engineReady}</span>}
+      {status?.state === 'error' && <span className="font-medium text-red-700">{t.computer.engineFailed}</span>}
+      {t.computer.expertRuns}{' '}
       <a href="https://github.com/dhbloo/rapfi" className={link} target="_blank" rel="noopener">
         Rapfi
       </a>{' '}
-      by dhbloo in your browser (about 11 MB, downloaded once). Rapfi is free software under the GPL-3.0;{' '}
+      {t.computer.expertBy}{' '}
       <a href={`${RAPFI_DIR}SOURCE.txt`} className={link} target="_blank" rel="noopener">
-        source and licence
+        {t.computer.sourceLicence}
       </a>
       .
     </p>
@@ -315,13 +309,14 @@ function Status({
   /** Expert's download progress while it is still loading (null when unknown). */
   loading?: number | null;
 }) {
-  if (winner) return winner === myMark ? <Badge tone="green">You won!</Badge> : <Badge tone="red">You lost</Badge>;
-  if (draw) return <Badge>Draw — the board is full</Badge>;
+  const t = useT();
+  if (winner) return winner === myMark ? <Badge tone="green">{t.computer.youWon}</Badge> : <Badge tone="red">{t.computer.youLost}</Badge>;
+  if (draw) return <Badge>{t.computer.draw}</Badge>;
   if (thinking && loading !== undefined) {
     return (
       <Badge tone="amber">
         <span className="mr-1.5 h-2.5 w-2.5 animate-spin rounded-full border-2 border-amber-300 border-t-amber-700" aria-hidden />
-        Loading engine{loading !== null && ` ${Math.round(loading * 100)}%`}…
+        {t.computer.loadingEngine(loading === null ? null : Math.round(loading * 100))}
       </Badge>
     );
   }
@@ -329,21 +324,22 @@ function Status({
     return (
       <Badge tone="amber">
         <span className="mr-1.5 h-2.5 w-2.5 animate-spin rounded-full border-2 border-amber-300 border-t-amber-700" aria-hidden />
-        <span className="sm:hidden">Thinking…</span>
-        <span className="hidden sm:inline">Computer is thinking…</span>
+        <span className="sm:hidden">{t.computer.thinkingShort}</span>
+        <span className="hidden sm:inline">{t.computer.thinking}</span>
       </Badge>
     );
   }
-  return <Badge tone="green">Your turn</Badge>;
+  return <Badge tone="green">{t.computer.yourTurn}</Badge>;
 }
 
 function PlayerRow({ mark, active, won, you, level }: { mark: Mark; active: boolean; won: boolean; you?: boolean; level?: Level }) {
   const { user } = useAuth();
+  const t = useT();
   return (
     <div className={`flex items-center gap-3 rounded-md border px-3 py-2 ${active ? 'border-slate-400 bg-slate-50' : 'border-slate-100'}`}>
       <MarkIcon mark={mark} className="h-5 w-5 shrink-0" />
       {you ? (
-        <Avatar user={user ?? { name: 'You', avatarUrl: null }} size={28} />
+        <Avatar user={user ?? { name: t.computer.you, avatarUrl: null }} size={28} />
       ) : (
         <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-800 text-[11px] font-semibold text-white" aria-hidden>
           AI
@@ -354,19 +350,20 @@ function PlayerRow({ mark, active, won, you, level }: { mark: Mark; active: bool
           <>
             {user ? (
               <>
-                {user.name} <span className="font-normal text-slate-400">(you)</span>
+                {user.name} <span className="font-normal text-slate-400">{t.common.you}</span>
               </>
             ) : (
-              'You'
+              t.computer.you
             )}
           </>
         ) : (
           <>
-            Computer <span className="font-normal text-slate-400">({LEVEL_INFO[level!].label.toLowerCase()})</span>
+            {t.computer.computerName}{' '}
+            <span className="font-normal text-slate-400">({t.computer.levels[level!].label.toLowerCase()})</span>
           </>
         )}
       </p>
-      {won && <Badge tone="green">Winner</Badge>}
+      {won && <Badge tone="green">{t.common.winner}</Badge>}
     </div>
   );
 }

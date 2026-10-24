@@ -1,5 +1,6 @@
 import { useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import type { PublicUser } from '@cc/shared';
+import { useT } from '../i18n';
 
 const BUTTON_VARIANTS = {
   primary: 'bg-slate-900 text-white hover:bg-slate-700 disabled:bg-slate-400',
@@ -28,8 +29,8 @@ export function Button({ variant = 'primary', size = 'md', className = '', ...pr
 export function ConfirmButton({
   onConfirm,
   children,
-  confirmLabel = 'Confirm',
-  prompt = 'Are you sure?',
+  confirmLabel,
+  prompt,
   variant = 'danger',
   size = 'md',
   disabled,
@@ -43,6 +44,7 @@ export function ConfirmButton({
   disabled?: boolean;
 }) {
   const [asking, setAsking] = useState(false);
+  const t = useT();
   if (!asking) {
     return (
       <Button variant={variant === 'danger' ? 'secondary' : variant} size={size} disabled={disabled} onClick={() => setAsking(true)}>
@@ -52,7 +54,7 @@ export function ConfirmButton({
   }
   return (
     <span className="inline-flex flex-wrap items-center gap-1.5">
-      <span className="text-xs text-slate-600">{prompt}</span>
+      <span className="text-xs text-slate-600">{prompt ?? t.common.areYouSure}</span>
       <Button
         variant={variant}
         size={size}
@@ -61,10 +63,10 @@ export function ConfirmButton({
           onConfirm();
         }}
       >
-        {confirmLabel}
+        {confirmLabel ?? t.common.confirm}
       </Button>
       <Button variant="ghost" size={size} onClick={() => setAsking(false)}>
-        Cancel
+        {t.common.cancel}
       </Button>
     </span>
   );
@@ -130,11 +132,12 @@ export function Card({
   );
 }
 
-export function Spinner({ label = 'Loading…' }: { label?: string }) {
+export function Spinner({ label }: { label?: string }) {
+  const t = useT();
   return (
     <div className="flex items-center justify-center gap-2 py-10 text-sm text-slate-500" role="status">
       <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" />
-      {label}
+      {label ?? t.common.loading}
     </div>
   );
 }
@@ -144,18 +147,17 @@ export function ErrorNote({ children }: { children: ReactNode }) {
 }
 
 export function Pager({ page, pageSize, total, onPage }: { page: number; pageSize: number; total: number; onPage: (p: number) => void }) {
+  const t = useT();
   const pages = Math.max(1, Math.ceil(total / pageSize));
   if (pages <= 1) return null;
   return (
     <div className="mt-4 flex items-center justify-end gap-2 text-sm text-slate-600">
       <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => onPage(page - 1)}>
-        Previous
+        {t.common.previous}
       </Button>
-      <span>
-        Page {page} of {pages}
-      </span>
+      <span>{t.common.pageOf(page, pages)}</span>
       <Button variant="secondary" size="sm" disabled={page >= pages} onClick={() => onPage(page + 1)}>
-        Next
+        {t.common.next}
       </Button>
     </div>
   );

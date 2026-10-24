@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router';
+import { useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { boardFromMoves, findWinLine, type GameDetail } from '@cc/shared';
 import { Board, MarkIcon } from '../components/Board';
 import { Avatar, Badge, Button, Card, ErrorNote, Spinner } from '../components/ui';
 import { api } from '../lib/api';
-import { formatDateTime, RESULT_LABEL } from '../lib/format';
+import { formatDateTime, resultLabel } from '../lib/format';
+import { Link, useT } from '../i18n';
 
 export function ReplayPage() {
   const { id } = useParams();
@@ -16,6 +17,7 @@ export function ReplayPage() {
 }
 
 function Replay({ game }: { game: GameDetail }) {
+  const t = useT();
   const total = game.moves.length;
   const [step, setStep] = useState(total);
   const go = (n: number) => setStep(Math.min(total, Math.max(0, n)));
@@ -43,11 +45,11 @@ function Replay({ game }: { game: GameDetail }) {
           <Board board={board} lastMove={last} winLine={winLine} />
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="secondary" size="sm" onClick={() => go(0)} aria-label="First move">⏮</Button>
-          <Button variant="secondary" size="sm" onClick={() => go(step - 1)} aria-label="Previous move">◀</Button>
-          <input type="range" min={0} max={total} value={step} onChange={(e) => go(Number(e.target.value))} className="min-w-32 flex-1" aria-label="Move" />
-          <Button variant="secondary" size="sm" onClick={() => go(step + 1)} aria-label="Next move">▶</Button>
-          <Button variant="secondary" size="sm" onClick={() => go(total)} aria-label="Last move">⏭</Button>
+          <Button variant="secondary" size="sm" onClick={() => go(0)} aria-label={t.replay.first}>⏮</Button>
+          <Button variant="secondary" size="sm" onClick={() => go(step - 1)} aria-label={t.replay.previous}>◀</Button>
+          <input type="range" min={0} max={total} value={step} onChange={(e) => go(Number(e.target.value))} className="min-w-32 flex-1" aria-label={t.replay.move} />
+          <Button variant="secondary" size="sm" onClick={() => go(step + 1)} aria-label={t.replay.next}>▶</Button>
+          <Button variant="secondary" size="sm" onClick={() => go(total)} aria-label={t.replay.last}>⏭</Button>
           <span className="w-20 text-right text-sm tabular-nums text-slate-600">
             {step} / {total}
           </span>
@@ -61,17 +63,17 @@ function Replay({ game }: { game: GameDetail }) {
               <MarkIcon mark={mark} className="h-4 w-4" />
               <Avatar user={game.players[mark]} size={24} />
               <span className="flex-1 truncate">{game.players[mark].name}</span>
-              {game.winner === mark && <Badge tone="green">Winner</Badge>}
+              {game.winner === mark && <Badge tone="green">{t.common.winner}</Badge>}
             </div>
           ))}
         </div>
         <dl className="mt-4 space-y-1 text-sm text-slate-600">
-          <div className="flex justify-between"><dt>Result</dt><dd>{game.result ? RESULT_LABEL[game.result] : 'In progress'}</dd></div>
-          <div className="flex justify-between"><dt>Started</dt><dd>{formatDateTime(game.startedAt)}</dd></div>
-          {game.endedAt && <div className="flex justify-between"><dt>Ended</dt><dd>{formatDateTime(game.endedAt)}</dd></div>}
+          <div className="flex justify-between"><dt>{t.replay.result}</dt><dd>{game.result ? resultLabel(game.result) : t.replay.inProgress}</dd></div>
+          <div className="flex justify-between"><dt>{t.replay.started}</dt><dd>{formatDateTime(game.startedAt)}</dd></div>
+          {game.endedAt && <div className="flex justify-between"><dt>{t.replay.ended}</dt><dd>{formatDateTime(game.endedAt)}</dd></div>}
         </dl>
-        <p className="mt-4 text-xs text-slate-400">Tip: use ← and → to step through moves.</p>
-        <Link to="/account" className="mt-3 inline-block text-sm text-blue-700 hover:underline">← Back to my games</Link>
+        <p className="mt-4 text-xs text-slate-400">{t.replay.tip}</p>
+        <Link to="/account" className="mt-3 inline-block text-sm text-blue-700 hover:underline">{t.replay.back}</Link>
       </Card>
     </div>
   );

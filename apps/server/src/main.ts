@@ -15,7 +15,12 @@ const PRERENDERED: Record<string, string> = {
   '/play/computer': 'play-computer.html',
   '/privacy': 'privacy.html',
   '/terms': 'terms.html',
+  '/ru': 'ru.html',
+  '/ru/rules': 'ru-rules.html',
+  '/ru/play/computer': 'ru-play-computer.html',
 };
+/** Client-side app shell per language prefix; anything else gets the English app.html. */
+const APP_SHELLS: Array<[RegExp, string]> = [[/^\/ru(\/|$)/, 'app-ru.html']];
 
 async function bootstrap() {
   config.jwtSecret; // fail fast if missing
@@ -53,8 +58,10 @@ async function bootstrap() {
       // A missing engine or asset file is a 404, not the app shell.
       if (req.path.startsWith('/engine/') || req.path.startsWith('/assets/')) return next();
       // Pre-rendered public pages first, then the client-side app shell.
-      const page = PRERENDERED[req.path.replace(/\/+$/, '')];
-      res.sendFile(join(webDist, page && existsSync(join(webDist, page)) ? page : appShell));
+      const path = req.path.replace(/\/+$/, '') || '/';
+      const page = PRERENDERED[path];
+      const shell = APP_SHELLS.find(([re, file]) => re.test(path) && existsSync(join(webDist, file)))?.[1] ?? appShell;
+      res.sendFile(join(webDist, page && existsSync(join(webDist, page)) ? page : shell));
     });
   }
 

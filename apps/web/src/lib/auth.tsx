@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Events, SESSION_HINT_COOKIE, type AuthConfig, type BanInfo, type DevLoginInput, type Me } from '@cc/shared';
 import { api, ApiError, setBannedHandler } from './api';
 import { disconnectSocket, getSocket } from './socket';
+import { langFromPath, localizePath } from '../i18n';
 
 type AuthState =
   | { status: 'loading' }
@@ -85,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         queryClient.clear();
         // Load the home page afresh: signing out on a members-only page would otherwise
         // redirect to the login screen.
-        window.location.replace('/');
+        window.location.replace(localizePath('/', langFromPath(window.location.pathname)));
       },
     };
   }, [state, config, queryClient]);

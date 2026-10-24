@@ -4,10 +4,12 @@ import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { errorText, formatTime } from '../lib/format';
 import { emitAck } from '../lib/socket';
+import { useT } from '../i18n';
 import { Avatar, Button, inputClass } from './ui';
 
 export function Chat({ roomId, messages, disabled }: { roomId: string; messages: ChatMessageDto[]; disabled?: boolean }) {
   const { user } = useAuth();
+  const t = useT();
   const [text, setText] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
@@ -34,7 +36,7 @@ export function Chat({ roomId, messages, disabled }: { roomId: string; messages:
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div ref={listRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1" aria-live="polite">
-        {messages.length === 0 && <p className="py-6 text-center text-sm text-slate-400">No messages yet. Say hi!</p>}
+        {messages.length === 0 && <p className="py-6 text-center text-sm text-slate-400">{t.chat.empty}</p>}
         {messages.map((m) => (
           <div key={m.id} className="group flex gap-2">
             <Avatar user={m.user} size={26} />
@@ -49,7 +51,7 @@ export function Chat({ roomId, messages, disabled }: { roomId: string; messages:
                     className="ml-auto hidden text-[11px] text-red-600 hover:underline group-hover:inline"
                     onClick={() => api(`/admin/messages/${m.id}`, { method: 'DELETE' })}
                   >
-                    Delete
+                    {t.chat.delete}
                   </button>
                 )}
               </div>
@@ -64,12 +66,12 @@ export function Chat({ roomId, messages, disabled }: { roomId: string; messages:
           value={text}
           onChange={(e) => setText(e.target.value)}
           maxLength={CHAT_MAX_LENGTH}
-          placeholder={disabled ? 'Chat is unavailable' : 'Write a message…'}
+          placeholder={disabled ? t.chat.unavailable : t.chat.placeholder}
           disabled={disabled}
-          aria-label="Chat message"
+          aria-label={t.chat.label}
         />
         <Button type="submit" disabled={disabled || sending || !text.trim()}>
-          Send
+          {t.chat.send}
         </Button>
       </form>
       {error && <p className="mt-1 text-xs text-red-600">{error}</p>}

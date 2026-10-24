@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Link, useParams } from 'react-router';
+import { useParams } from 'react-router';
 import { Events, otherMark, type ChatMessageDto, type EndReason, type Mark, type PublicUser, type RoomState } from '@cc/shared';
 import { Board, MarkIcon } from '../components/Board';
 import { Chat } from '../components/Chat';
 import { RatingBadge, RatingDiff } from '../components/RatingBadge';
 import { Avatar, Badge, Button, Card, ConfirmButton, Spinner } from '../components/ui';
 import { useMe } from '../lib/auth';
-import { END_REASON_LABEL, errorText } from '../lib/format';
+import { Link, useT } from '../i18n';
+import { endReasonLabel, errorText } from '../lib/format';
 import { useNow, useOnSocketConnect, useSocketEvent } from '../lib/hooks';
 import { emitAck, getSocket } from '../lib/socket';
 
@@ -18,6 +19,7 @@ export function RoomRoute() {
 
 /** A live room, for a signed-in member or for a guest who joined an unrated room by link. */
 export function RoomPage({ roomId, me }: { roomId: string; me: PublicUser }) {
+  const t = useT();
   const [state, setState] = useState<RoomState | null>(null);
   const [messages, setMessages] = useState<ChatMessageDto[]>([]);
   const [joinError, setJoinError] = useState<string | null>(null);
@@ -50,17 +52,15 @@ export function RoomPage({ roomId, me }: { roomId: string; me: PublicUser }) {
   if (closed || joinError) {
     return (
       <Card className="mx-auto max-w-md text-center">
-        <h1 className="text-lg font-semibold">{closed ? 'This room was closed' : 'Room unavailable'}</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          {closed ? `Reason: ${END_REASON_LABEL[closed]}.` : errorText(joinError!)}
-        </p>
+        <h1 className="text-lg font-semibold">{closed ? t.room.closedTitle : t.room.unavailable}</h1>
+        <p className="mt-1 text-sm text-slate-500">{closed ? t.room.reason(endReasonLabel(closed)) : errorText(joinError!)}</p>
         <Link to="/" className="mt-4 inline-block text-sm font-medium text-blue-700 hover:underline">
-          {me.guest ? 'Go to the home page' : 'Back to the lobby'}
+          {me.guest ? t.common.homePage : t.room.backLobby}
         </Link>
       </Card>
     );
   }
-  if (!state) return <Spinner label="Joining room…" />;
+  if (!state) return <Spinner label={t.room.joining} />;
 
   const myMark: Mark | null = state.players.X.id === me.id ? 'X' : state.players.O?.id === me.id ? 'O' : null;
   const myTurn = state.status === 'PLAYING' && myMark === state.turn;
@@ -78,14 +78,14 @@ export function RoomPage({ roomId, me }: { roomId: string; me: PublicUser }) {
           <div className="min-w-0">
             <h1 className="flex items-center gap-2 text-lg font-semibold">
               <span className="truncate">{state.name}</span>
-              {state.unrated && <span className="shrink-0"><Badge>Unrated</Badge></span>}
-              {state.status === 'PLAYING' && !state.timer.enabled && <span className="shrink-0"><Badge>No timer</Badge></span>}
+              {state.unrated && <span className="shrink-0"><Badge>{t.room.unrated}</Badge></span>}
+              {state.status === 'PLAYING' && !state.timer.enabled && <span className="shrink-0"><Badge>{t.room.noTimer}</Badge></span>}
             </h1>
             <p className="truncate text-xs text-slate-500">
-              {state.moveCount} {state.moveCount === 1 ? 'move' : 'moves'}
-              {state.spectators > 0 && ` · ${state.spectators} watching`}
+              {t.common.moves(state.moveCount)}
+              {state.spectators > 0 && t.room.watching(state.spectators)}
               {state.status === 'FINISHED' && state.endReason && (
-                <span className="sm:hidden"> · {END_REASON_LABEL[state.endReason]}</span>
+                <span className="sm:hidden"> · {endReasonLabel(state.endReason)}</span>
               )}
             </p>
           </div>
@@ -108,43 +108,41 @@ export function RoomPage({ roomId, me }: { roomId: string; me: PublicUser }) {
       </div>
 
       <div className="space-y-4">
-        <Card title="Players">
+        <Card title={t.room.players}>
           <div className="space-y-2">
             <PlayerRow mark="X" user={state.players.X} state={state} isMe={myMark === 'X'} secondsLeft={secondsLeft} />
             <PlayerRow mark="O" user={state.players.O} state={state} isMe={myMark === 'O'} secondsLeft={secondsLeft} />
           </div>
           {state.status === 'FINISHED' && state.rated === false && !state.unrated && (
-            <p className="mt-2 text-xs text-slate-500">This game was not rated.</p>
+            <p className="mt-2 text-xs text-slate-500">{t.room.notRated}</p>
           )}
           {state.status === 'WAITING' && state.unrated && (
-            <p className="mt-3 text-xs text-slate-500">
-              This room isn't listed in the lobby. Send the invite link to a friend: they can join without an account.
-            </p>
+            <p className="mt-3 text-xs text-slate-500">{t.room.unratedHint}</p>
           )}
           <div className="mt-4 flex flex-wrap items-center gap-2">
             {state.status === 'PLAYING' && myMark && (
-              <ConfirmButton size="sm" prompt="Resign this game?" confirmLabel="Resign" onConfirm={() => emitAck(Events.GameResign, { roomId })}>
-                Resign
+              <ConfirmButton size="sm" prompt={t.room.resignPrompt} confirmLabel={t.room.resign} onConfirm={() => emitAck(Events.GameResign, { roomId })}>
+                {t.room.resign}
               </ConfirmButton>
             )}
             {state.status === 'PLAYING' && myMark && !state.timer.proposal && (
               <Button size="sm" variant="secondary" onClick={() => emitAck(Events.GameTimer, { roomId, agree: true })}>
-                {state.timer.enabled ? 'Turn off timer' : 'Turn on timer'}
+                {state.timer.enabled ? t.room.timerOff : t.room.timerOn}
               </Button>
             )}
             {state.status === 'WAITING' && <CopyInvite />}
             {me.guest ? (
               <Link to={`/login?next=/room/${roomId}`} className="ml-auto text-sm text-slate-600 hover:text-slate-900">
-                Sign in for rated games
+                {t.room.signInRated}
               </Link>
             ) : (
               <Link to="/" className="ml-auto text-sm text-slate-600 hover:text-slate-900">
-                ← Lobby
+                {t.room.backLobbyShort}
               </Link>
             )}
           </div>
         </Card>
-        <Card title="Chat" className="flex h-[26rem] flex-col" bodyClassName="flex min-h-0 flex-1 flex-col">
+        <Card title={t.room.chat} className="flex h-[26rem] flex-col" bodyClassName="flex min-h-0 flex-1 flex-col">
           <Chat roomId={roomId} messages={messages} />
         </Card>
       </div>
@@ -154,6 +152,7 @@ export function RoomPage({ roomId, me }: { roomId: string; me: PublicUser }) {
 
 /** After a game: offer, accept or withdraw a rematch. Spectators just see who has offered. */
 function Rematch({ state, myMark }: { state: RoomState; myMark: Mark | null }) {
+  const t = useT();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -167,7 +166,7 @@ function Rematch({ state, myMark }: { state: RoomState; myMark: Mark | null }) {
   if (!myMark) {
     const offered = (['X', 'O'] as const).filter((m) => state.rematch[m]);
     if (offered.length === 0) return null;
-    return <p className="text-sm text-slate-600">{state.players[offered[0]]?.name} has offered a rematch.</p>;
+    return <p className="text-sm text-slate-600">{t.room.rematchOffered(state.players[offered[0]]?.name ?? '')}</p>;
   }
 
   const opponentMark = otherMark(myMark);
@@ -179,31 +178,31 @@ function Rematch({ state, myMark }: { state: RoomState; myMark: Mark | null }) {
   let message: string;
   let action: ReactNode;
   if (!opponentHere) {
-    message = `${opponent.name} has left the room.`;
+    message = t.room.opponentLeft(opponent.name);
     action = (
       <Link to="/" className="text-sm font-medium text-blue-700 hover:underline">
-        {myMark && state.players[myMark]?.guest ? 'Go to the home page' : 'Find a new game'}
+        {myMark && state.players[myMark]?.guest ? t.common.homePage : t.room.findNewGame}
       </Link>
     );
   } else if (iOffered) {
-    message = `Waiting for ${opponent.name} to accept…`;
+    message = t.room.waitingAccept(opponent.name);
     action = (
       <Button size="sm" variant="secondary" disabled={busy} onClick={() => send(false)}>
-        Cancel
+        {t.common.cancel}
       </Button>
     );
   } else if (theyOffered) {
-    message = `${opponent.name} wants a rematch.`;
+    message = t.room.wantsRematch(opponent.name);
     action = (
       <Button size="sm" disabled={busy} onClick={() => send(true)}>
-        Accept rematch
+        {t.room.acceptRematch}
       </Button>
     );
   } else {
-    message = 'Play again in this room?';
+    message = t.room.playAgain;
     action = (
       <Button size="sm" disabled={busy} onClick={() => send(true)}>
-        Rematch
+        {t.room.rematch}
       </Button>
     );
   }
@@ -218,10 +217,7 @@ function Rematch({ state, myMark }: { state: RoomState; myMark: Mark | null }) {
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-slate-900">{message}</p>
         {opponentHere && (
-          <p className="text-xs text-slate-500">
-            Colours swap: you'll play {opponentMark}
-            {opponentMark === 'X' ? ' and move first' : ''}.
-          </p>
+          <p className="text-xs text-slate-500">{t.room.coloursSwap(opponentMark, opponentMark === 'X')}</p>
         )}
         {error && <p className="text-xs text-red-600">{error}</p>}
       </div>
@@ -232,9 +228,10 @@ function Rematch({ state, myMark }: { state: RoomState; myMark: Mark | null }) {
 
 /** Asks the opponent to switch the move timer on or off; spectators just see the request. */
 function TimerProposal({ state, myMark }: { state: RoomState; myMark: Mark | null }) {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const proposer = state.timer.proposal!;
-  const what = state.timer.enabled ? 'turn off the move timer' : 'turn the move timer back on';
+  const what = state.timer.enabled ? t.room.timerWhatOff : t.room.timerWhatOn;
 
   async function vote(agree: boolean) {
     setBusy(true);
@@ -242,7 +239,7 @@ function TimerProposal({ state, myMark }: { state: RoomState; myMark: Mark | nul
     setBusy(false);
   }
 
-  if (!myMark) return <p className="text-sm text-slate-600">{state.players[proposer]?.name} wants to {what}.</p>;
+  if (!myMark) return <p className="text-sm text-slate-600">{t.room.wantsTo(state.players[proposer]?.name ?? '', what)}</p>;
   const mine = proposer === myMark;
   const opponent = state.players[otherMark(myMark)]!;
   return (
@@ -253,19 +250,19 @@ function TimerProposal({ state, myMark }: { state: RoomState; myMark: Mark | nul
       }`}
     >
       <p className="min-w-0 flex-1 text-sm font-medium text-slate-900">
-        {mine ? `Waiting for ${opponent.name} to agree…` : `${opponent.name} wants to ${what}.`}
+        {mine ? t.room.waitingAgree(opponent.name) : t.room.wantsTo(opponent.name, what)}
       </p>
       {mine ? (
         <Button size="sm" variant="secondary" disabled={busy} onClick={() => vote(false)}>
-          Cancel
+          {t.common.cancel}
         </Button>
       ) : (
         <span className="flex gap-2">
           <Button size="sm" variant="secondary" disabled={busy} onClick={() => vote(false)}>
-            Decline
+            {t.common.decline}
           </Button>
           <Button size="sm" disabled={busy} onClick={() => vote(true)}>
-            Accept
+            {t.common.accept}
           </Button>
         </span>
       )}
@@ -276,35 +273,47 @@ function TimerProposal({ state, myMark }: { state: RoomState; myMark: Mark | nul
 const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 
 function StatusLine({ state, myMark, secondsLeft }: { state: RoomState; myMark: Mark | null; secondsLeft: number | null }) {
-  if (state.status === 'WAITING') return <Badge tone="amber">Waiting for an opponent…</Badge>;
+  const t = useT();
+  if (state.status === 'WAITING') return <Badge tone="amber">{t.room.waitingOpponent}</Badge>;
   if (state.status === 'PLAYING') {
     const time = secondsLeft === null ? '' : ` · ${clock(secondsLeft)}`;
     if (!myMark) {
       return (
         <Badge tone="blue">
+          {t.room.turnOf.before}
           <ShortName name={state.players[state.turn]?.name} />
-          's turn{time}
+          {t.room.turnOf.after}
+          {time}
         </Badge>
       );
     }
-    if (state.turn !== myMark) return <Badge>Opponent's turn{time}</Badge>;
+    if (state.turn !== myMark) return <Badge>{t.room.opponentsTurn}{time}</Badge>;
     // Your own clock warns as it runs low.
     const tone = secondsLeft === null || secondsLeft > 10 ? 'green' : secondsLeft > 5 ? 'amber' : 'red';
-    return <Badge tone={tone}>Your turn{time}</Badge>;
+    return <Badge tone={tone}>{t.room.yourTurn}{time}</Badge>;
   }
   // On phones the reason is shown under the room name instead, keeping the badge short.
-  const reason = state.endReason && <span className="hidden sm:inline"> — {END_REASON_LABEL[state.endReason]}</span>;
-  if (!state.winner) return <Badge>Game over{reason}</Badge>;
+  const reason = state.endReason && <span className="hidden sm:inline"> — {endReasonLabel(state.endReason)}</span>;
+  if (!state.winner) return <Badge>{t.room.gameOver}{reason}</Badge>;
   if (myMark) {
     return state.winner === myMark ? (
-      <Badge tone="green">You won{reason}!</Badge>
+      <Badge tone="green">
+        {t.room.youWon}
+        {reason}
+        {t.room.exclamation}
+      </Badge>
     ) : (
-      <Badge tone="red">You lost{reason}</Badge>
+      <Badge tone="red">
+        {t.room.youLost}
+        {reason}
+      </Badge>
     );
   }
   return (
     <Badge tone="blue">
-      <ShortName name={state.players[state.winner]?.name} /> won{reason}
+      <ShortName name={state.players[state.winner]?.name} />
+      {t.room.won}
+      {reason}
     </Badge>
   );
 }
@@ -327,6 +336,7 @@ function PlayerRow({
   isMe: boolean;
   secondsLeft: number | null;
 }) {
+  const t = useT();
   const deadline = state.awayDeadline[mark];
   const now = useNow(deadline !== null);
   const active = state.status === 'PLAYING' && state.turn === mark;
@@ -340,8 +350,8 @@ function PlayerRow({
           <Avatar user={user} size={28} />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">
-              {user.name} {isMe && <span className="font-normal text-slate-400">(you)</span>}{' '}
-              {user.guest && <span className="font-normal text-slate-400">· guest</span>}{' '}
+              {user.name} {isMe && <span className="font-normal text-slate-400">{t.common.you}</span>}{' '}
+              {user.guest && <span className="font-normal text-slate-400">{t.common.guest}</span>}{' '}
               {!state.unrated && state.ratings[mark] && (
                 <RatingBadge rating={state.ratings[mark]!} className="font-normal text-slate-500" />
               )}
@@ -350,27 +360,28 @@ function PlayerRow({
             <p className="text-xs text-slate-500">
               {deadline !== null ? (
                 <span className="text-amber-700">
-                  Disconnected — {state.status === 'WAITING' ? 'room closes' : 'forfeits'} in {Math.max(0, Math.ceil((deadline - now) / 1000))}s
+                  {t.room.disconnected(state.status === 'WAITING', Math.max(0, Math.ceil((deadline - now) / 1000)))}
                 </span>
               ) : state.connected[mark] ? (
-                'Online'
+                t.room.online
               ) : (
-                'Offline'
+                t.room.offline
               )}
-              {active && secondsLeft !== null && ` · ${clock(secondsLeft)} left`}
+              {active && secondsLeft !== null && t.room.timeLeft(clock(secondsLeft))}
             </p>
           </div>
-          {won && <Badge tone="green">Winner</Badge>}
+          {won && <Badge tone="green">{t.common.winner}</Badge>}
           <span className={`h-2 w-2 rounded-full ${state.connected[mark] ? 'bg-emerald-500' : 'bg-slate-300'}`} aria-hidden />
         </>
       ) : (
-        <p className="text-sm text-slate-400">Empty seat — waiting for someone to join</p>
+        <p className="text-sm text-slate-400">{t.room.emptySeat}</p>
       )}
     </div>
   );
 }
 
 function CopyInvite() {
+  const t = useT();
   const [copied, setCopied] = useState(false);
   return (
     <Button
@@ -383,7 +394,7 @@ function CopyInvite() {
         })
       }
     >
-      {copied ? 'Link copied' : 'Copy invite link'}
+      {copied ? t.room.linkCopied : t.room.copyInvite}
     </Button>
   );
 }
